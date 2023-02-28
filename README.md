@@ -6,3 +6,7 @@
 	</a>
 	<br><sub>The open-source Core of a big Dot-Net-Based Framework, to makes easy software developments.</sub>
 </h1>
+<h2>Dependencies</h2>
+<ol>
+  <li><a href="https://versionsof.net/framework/4.5.2">.Net Framework 4.5.2</a></li>
+</ol>
