@@ -1,0 +1,32 @@
+D:\MiMFa\My Product\Software\MiMFa Framework\MiMFa Framework\Core\bin\Release\MiMFa Framework.dll.config
+D:\MiMFa\My Product\Software\MiMFa Framework\MiMFa Framework\Core\bin\Release\MiMFa Framework.dll
+D:\MiMFa\My Product\Software\MiMFa Framework\MiMFa Framework\Core\bin\Release\MiMFa Framework.pdb
+D:\MiMFa\My Product\Software\MiMFa Framework\MiMFa Framework\Core\bin\Release\Devart.Data.dll
+D:\MiMFa\My Product\Software\MiMFa Framework\MiMFa Framework\Core\bin\Release\Devart.Data.SQLite.dll
+D:\MiMFa\My Product\Software\MiMFa Framework\MiMFa Framework\Core\bin\Release\EntityFramework.dll
+D:\MiMFa\My Product\Software\MiMFa Framework\MiMFa Framework\Core\bin\Release\itextsharp.dll
+D:\MiMFa\My Product\Software\MiMFa Framework\MiMFa Framework\Core\bin\Release\System.Data.SQLite.dll
+D:\MiMFa\My Product\Software\MiMFa Framework\MiMFa Framework\Core\bin\Release\SharpZipLib.dll
+D:\MiMFa\My Product\Software\MiMFa Framework\MiMFa Framework\Core\obj\Release\MiMFa Framework.csprojResolveAssemblyReference.cache
+D:\MiMFa\My Product\Software\MiMFa Framework\MiMFa Framework\Core\obj\Release\MiMFa Framework.csproj.ResolveComReference.cache
+D:\MiMFa\My Product\Software\MiMFa Framework\MiMFa Framework\Core\obj\Release\MiMFa_Framework.Properties.Resources.resources
+D:\MiMFa\My Product\Software\MiMFa Framework\MiMFa Framework\Core\obj\Release\MiMFa_Framework.Service.MessageBoxMode.FormMode.Circle.resources
+D:\MiMFa\My Product\Software\MiMFa Framework\MiMFa Framework\Core\obj\Release\MiMFa Framework.csproj.GenerateResource.Cache
+D:\MiMFa\My Product\Software\MiMFa Framework\MiMFa Framework\Core\obj\Release\MiMFa Framework.dll
+D:\MiMFa\My Product\Software\MiMFa Framework\MiMFa Framework\Core\obj\Release\MiMFa Framework.pdb
+D:\MiMFa\My Product\Software\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Release\MiMFa Framework.dll.config
+D:\MiMFa\My Product\Software\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Release\MiMFa Framework.dll
+D:\MiMFa\My Product\Software\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Release\MiMFa Framework.pdb
+D:\MiMFa\My Product\Software\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Release\MiMFa Framework.csproj.ResolveComReference.cache
+D:\MiMFa\My Product\Software\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Release\MiMFa Framework.csproj.GenerateResource.Cache
+D:\MiMFa\My Product\Software\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Release\MiMFa Framework.dll
+D:\MiMFa\My Product\Software\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Release\MiMFa Framework.pdb
+D:\MiMFa\My Product\Software\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Release\MiMFa Framework.csprojAssemblyReference.cache
+D:\MiMFa\My Product\Software\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Release\MiMFa Framework.csproj.CoreCompileInputs.cache
+D:\MiMFa\My Product\Software\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Release\MiMFa Framework.csproj.CopyComplete
+D:\MiMFa\My Product\Software\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Release\HtmlAgilityPack.dll
+D:\MiMFa\My Product\Software\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Release\HtmlAgilityPack.pdb
+D:\MiMFa\My Product\Software\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Release\HtmlAgilityPack.xml
+D:\MiMFa\My Product\Software\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Release\MiMFa.Properties.Resources.resources
+D:\MiMFa\My Product\Software\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Release\MiMFa.Service.Dialog.MessageBoxDialog.FormDialog.ModernDialog.resources
+D:\MiMFa\My Product\Software\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Release\MiMFa.Service.Dialog.MessageBoxDialog.FormDialog.CircleDialog.resources

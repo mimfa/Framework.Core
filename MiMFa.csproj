@@ -1,0 +1,566 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{ADC72CD2-885E-442A-983E-0BA87B7234EF}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>MiMFa</RootNamespace>
+    <AssemblyName>MiMFa Framework</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>
+    </DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>0</WarningLevel>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CodeAnalysisIgnoreGeneratedCode>false</CodeAnalysisIgnoreGeneratedCode>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>MiMFa Framework Icon.ico</ApplicationIcon>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DelaySign>false</DelaySign>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Devart.Data, Version=5.0.1350.0, Culture=neutral, PublicKeyToken=09af7300eec23701, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\Backup\MiMFa Framework 4.6\Core\bin\Release\Devart.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="Devart.Data.SQLite, Version=5.3.558.0, Culture=neutral, PublicKeyToken=09af7300eec23701, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\Backup\MiMFa Framework 4.6\Core\bin\Release\Devart.Data.SQLite.dll</HintPath>
+    </Reference>
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\Backup\MiMFa Framework 4.6\Core\bin\Release\EntityFramework.dll</HintPath>
+    </Reference>
+    <Reference Include="HtmlAgilityPack, Version=1.11.46.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
+      <HintPath>..\packages\HtmlAgilityPack.1.11.46\lib\Net45\HtmlAgilityPack.dll</HintPath>
+    </Reference>
+    <Reference Include="Interop.WMPLib">
+      <HintPath>C:\Program Files (x86)\MiMFa\Looking For Science\Interop.WMPLib.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Microsoft.mshtml, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Microsoft.VisualBasic" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data.SQLite, Version=1.0.98.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\MiMFa\Looking For Science\System.Data.SQLite.dll</HintPath>
+    </Reference>
+    <Reference Include="System.DirectoryServices" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.Management.Instrumentation" />
+    <Reference Include="System.Net" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Windows.Forms.DataVisualization" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Controls\WinForm\ButtonPack\ButtonAction.cs" />
+    <Compile Include="Controls\WinForm\Menu\ColorTable\BrowserStripColors.cs" />
+    <Compile Include="Controls\WinForm\Menu\ColorTable\DefaultStripColors.cs" />
+    <Compile Include="Controls\WinForm\Menu\ColorTable\PaletteStripColors.cs" />
+    <Compile Include="Controls\WinForm\Menu\ToolStripRender.cs" />
+    <Compile Include="Controls\WinForm\ScrollBar\HorizontalScrollBar.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\WinForm\ScrollBar\HorizontalScrollBar.Designer.cs">
+      <DependentUpon>HorizontalScrollBar.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\WinForm\ScrollBar\ScrollBase.cs" />
+    <Compile Include="Controls\WinForm\ScrollBar\VerticalScrollBar.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\WinForm\ScrollBar\VerticalScrollBar.Designer.cs">
+      <DependentUpon>VerticalScrollBar.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Engine\Search.cs" />
+    <Compile Include="Engine\Template\ITemplateApplier.cs" />
+    <Compile Include="Engine\Template\ITemplateIgnorer.cs" />
+    <Compile Include="Engine\Template\PaletteBase.cs" />
+    <Compile Include="Engine\Template\IPalette.cs" />
+    <Compile Include="Engine\Template\ITemplator.cs" />
+    <Compile Include="Engine\Template\ITemplatable.cs" />
+    <Compile Include="Engine\Template\TemplatableBase.cs" />
+    <Compile Include="Engine\Translation\TranslatableBase.cs" />
+    <Compile Include="Engine\Translation\ITranslatable.cs" />
+    <Compile Include="Engine\Web\IPointerJSSupported.cs" />
+    <Compile Include="Engine\Web\IWebBrowser.cs" />
+    <Compile Include="Exclusive\Accessibility\PropertyToContentInjection.cs" />
+    <Compile Include="Exclusive\Animate\FormMove.cs" />
+    <Compile Include="Exclusive\Animate\ObjectMoveOrResize.cs" />
+    <Compile Include="Exclusive\Attribute\DefaultMethodAttribute.cs" />
+    <Compile Include="Graphic\ProcessColor.cs" />
+    <Compile Include="Intermediate\HotKey\CharKey.cs" />
+    <Compile Include="Graphic\Sub\GraphicOptions.cs" />
+    <Compile Include="Graphic\ProcessGraphic.cs" />
+    <Compile Include="Graphic\ProcessImage.cs" />
+    <Compile Include="Engine\Web\PointerMode.cs" />
+    <Compile Include="Engine\Web\PointerJS.cs" />
+    <Compile Include="Engine\Web\ITabWebBrowser.cs" />
+    <Compile Include="Interpreters\IInterpreter.cs" />
+    <Compile Include="Model\Data\KeyValueMatrix.cs" />
+    <Compile Include="Model\ILogger.cs" />
+    <Compile Include="Model\IO\Connector\ConnectorBase.cs" />
+    <Compile Include="Model\IO\Connector\ExcelFile.cs" />
+    <Compile Include="Model\IO\Connector\PlainTextFile.cs" />
+    <Compile Include="Model\ITabViewer.cs" />
+    <Compile Include="Model\Status\FuzzyStatus.cs" />
+    <Compile Include="Model\Status\IStatus.cs" />
+    <Compile Include="Model\Structure\Hierarchy.cs" />
+    <Compile Include="Model\Structure\Instance\Phrase.cs" />
+    <Compile Include="Intermediate\Listener\KeyboardListener.cs" />
+    <Compile Include="Engine\Translation\ITranslator.cs" />
+    <Compile Include="Exclusive\Process\TimerTask.cs" />
+    <Compile Include="General\CharBank.cs" />
+    <Compile Include="General\EnumsBank.cs" />
+    <Compile Include="Model\Structure\Instance\Book.cs" />
+    <Compile Include="Model\Structure\FileHierarchy.cs" />
+    <Compile Include="Model\Structure\StreamHierarchy.cs" />
+    <Compile Include="Model\Structure\StructureBase.cs" />
+    <Compile Include="Model\Structure\Instance\Person.cs" />
+    <Compile Include="Intermediate\Notepad.cs" />
+    <Compile Include="Model\Data\SmartLongPointCollection.cs" />
+    <Compile Include="Model\IO\Matrices\ForceMathMatrixFile.cs" />
+    <Compile Include="Model\IO\Matrices\TextMatrixFile.cs" />
+    <Compile Include="Model\IO\Matrices\MathMatrixFile.cs" />
+    <Compile Include="Model\IO\ChainedFileCollection.cs" />
+    <Compile Include="Model\IO\MatrixFile.cs" />
+    <Compile Include="Model\Status\CrispStatus.cs" />
+    <Compile Include="Model\Peculiarities\LongPoint.cs" />
+    <Compile Include="Model\Peculiarities\LongLocation.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Service\Dialog\WaitDialog\FormDialog\ThreadDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Service\Dialog\WaitDialog\FormDialog\ThreadDialog.designer.cs">
+      <DependentUpon>ThreadDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Service\Dialog\WaitDialog\FormDialog\WaitingDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Service\Dialog\WaitDialog\FormDialog\WaitingDialog.Designer.cs">
+      <DependentUpon>WaitingDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Service\SelectService.cs" />
+    <Compile Include="Sub\Default.cs" />
+    <Compile Include="Intermediate\HotKey\KeyEventArgs.cs" />
+    <Compile Include="Intermediate\HotKey\HotKey.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\DataBase\DataBase.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\DataBase\SQLiteDataBase.cs" />
+    <Compile Include="Exclusive\DateAndTime\SmartDate.cs" />
+    <Compile Include="Exclusive\DateAndTime\SmartDateTime.cs" />
+    <Compile Include="Exclusive\DateAndTime\SmartIntervalDate.cs" />
+    <Compile Include="Exclusive\DateAndTime\SmartIntervalMeetTime.cs" />
+    <Compile Include="Exclusive\DateAndTime\SmartIntervalTime.cs" />
+    <Compile Include="Exclusive\DateAndTime\SmartTime.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\Script\Sub\ScriptException.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\Script\Sub\ParsedScript.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\Script\ScriptEngine.cs" />
+    <Compile Include="Exclusive\View\ToHTML.cs" />
+    <Compile Include="Exclusive\View\ToStringBase.cs" />
+    <Compile Include="Exclusive\View\ToText.cs" />
+    <Compile Include="Exclusive\View\ViewMode.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\ReportLanguage\Sub\Report.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\ReportLanguage\Sub\ReportStyle.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\CommandLanguage\Sub\Address.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\CommandLanguage\Sub\MCLTools.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\CommandLanguage\Sub\Options.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\CommandLanguage\Sub\Type\Accessibility.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\CommandLanguage\Sub\Type\EventHandlers.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\CommandLanguage\Sub\Type\EventPack.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\CommandLanguage\Sub\Type\Function.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\CommandLanguage\Sub\Type\Variable.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\ProgramingTechnology.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\Tools\Pickup\CollectionPickup.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\Tools\Pickup\CommentPickup.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\Tools\Pickup\ParenthesisPickup.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\Tools\Pickup\Pickup.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\Tools\Pickup\StringPickup.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\Tools\Pickup\StrongCollectionPickup.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\Tools\Pickup\StrongParenthesisPickup.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\Tools\Pickup\StrongStringPickup.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\Tools\ProviderTools.cs" />
+    <Compile Include="Exclusive\ProgramingTechnology\Tools\Sub\ActionEventHandler.cs" />
+    <Compile Include="Exclusive\Security\Cryptography.cs" />
+    <Compile Include="Exclusive\Security\MicrosoftWindows.cs" />
+    <Compile Include="Framework\1-User Interface Layer\APIBase.cs" />
+    <Compile Include="Framework\2-Calculations Logic Layer\APIBase.cs" />
+    <Compile Include="Framework\3-Model Format Layer\APIBase.cs" />
+    <Compile Include="Framework\3-Model Format Layer\Execute\Archive.cs" />
+    <Compile Include="Framework\3-Model Format Layer\Execute\Exacute.cs" />
+    <Compile Include="Framework\3-Model Format Layer\Execute\HeavyData.cs" />
+    <Compile Include="Framework\3-Model Format Layer\Execute\IExecute.cs" />
+    <Compile Include="Framework\3-Model Format Layer\Execute\ReportStyles.cs" />
+    <Compile Include="Framework\3-Model Format Layer\Model\HeavyData.cs" />
+    <Compile Include="Framework\Infrastructure\APIBase.cs" />
+    <Compile Include="General\ButtonAction.cs" />
+    <Compile Include="General\Compute.cs" />
+    <Compile Include="General\HandlersBank.cs" />
+    <Compile Include="Model\Comparer\ContainsComparer.cs" />
+    <Compile Include="Model\Comparer\EndsWithComparer.cs" />
+    <Compile Include="Model\Comparer\StartsOrEndsWithComparer.cs" />
+    <Compile Include="Model\Comparer\StartsWithComparer.cs" />
+    <Compile Include="Model\Data\SmartMatrix.cs" />
+    <Compile Include="Model\Data\SmartPointCollection.cs" />
+    <Compile Include="Model\IO\ChainedFiles\FilterCollection.cs" />
+    <Compile Include="Model\IO\ChainedFiles\FilterItem.cs" />
+    <Compile Include="Model\IO\ChainedFile.cs" />
+    <Compile Include="Service\ConvertService.cs" />
+    <Compile Include="Service\InfoService.cs" />
+    <Compile Include="Service\Dialog\MessageDialog\FormDialog\ModernDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Service\Dialog\MessageDialog\FormDialog\ModernDialog.Designer.cs">
+      <DependentUpon>ModernDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Service\MathService.cs" />
+    <Compile Include="Service\PathService.cs" />
+    <Compile Include="Service\ProcessService.cs" />
+    <Compile Include="General\QueryToDataSet.cs" />
+    <Compile Include="Service\ScreenService.cs" />
+    <Compile Include="General\SimplyInterpreter.cs" />
+    <Compile Include="General\Transmission.cs" />
+    <Compile Include="Service\UniqueService.cs" />
+    <Compile Include="Model\Data\SmartTable.cs" />
+    <Compile Include="Model\ObjectDetail.cs" />
+    <Compile Include="Model\Data\Matrix.cs" />
+    <Compile Include="Model\Peculiarities\Balance.cs" />
+    <Compile Include="Model\Data\SmartCollection.cs" />
+    <Compile Include="Model\Data\SmartDictionary.cs" />
+    <Compile Include="Model\Empty.cs" />
+    <Compile Include="Model\Data\SmartKeyValue.cs" />
+    <Compile Include="Model\Data\SmartKeyValueList.cs" />
+    <Compile Include="Model\Data\SmartList.cs" />
+    <Compile Include="Model\Peculiarities\Location.cs" />
+    <Compile Include="Model\Percent.cs" />
+    <Compile Include="Model\Data\SmartQueue.cs" />
+    <Compile Include="Model\Data\SmartStack.cs" />
+    <Compile Include="Model\Element\XML\XMLElement.cs" />
+    <Compile Include="Network\FTP\DataTransit.cs" />
+    <Compile Include="Network\Hybrid\DataTransit.cs" />
+    <Compile Include="Service\InternetService.cs" />
+    <Compile Include="Service\NetService.cs" />
+    <Compile Include="Network\Sub\Packet.cs" />
+    <Compile Include="Network\Sub\Sub.cs" />
+    <Compile Include="Network\TCP\DataTransit.cs" />
+    <Compile Include="Network\TCP\Receiver.cs" />
+    <Compile Include="Network\TCP\Sender.cs" />
+    <Compile Include="Network\UDP\Receiver.cs" />
+    <Compile Include="Network\UDP\Sender.cs" />
+    <Compile Include="Network\Web\WebClient.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+    <Compile Include="Service\CollectionService.cs" />
+    <Compile Include="Service\ControlService.cs" />
+    <Compile Include="Service\Dialog\MessageDialog\IDialog.cs" />
+    <Compile Include="Service\IOService.cs" />
+    <Compile Include="Service\DialogService.cs" />
+    <Compile Include="Service\Dialog\MessageDialog\FormDialog\CircleDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Service\Dialog\MessageDialog\FormDialog\CircleDialog.Designer.cs">
+      <DependentUpon>CircleDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Service\StringService.cs" />
+    <Compile Include="Service\WebService.cs" />
+    <Compile Include="Sub\Config.cs" />
+    <Compile Include="Sub\Statement.cs" />
+    <Compile Include="WPF\Service\RichTextBox.cs" />
+    <Compile Include="WPF\Service\WebBrowser.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="General\packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Controls\WinForm\ScrollBar\HorizontalScrollBar.resx">
+      <DependentUpon>HorizontalScrollBar.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\WinForm\ScrollBar\VerticalScrollBar.resx">
+      <DependentUpon>VerticalScrollBar.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Service\Dialog\MessageDialog\FormDialog\ModernDialog.resx">
+      <DependentUpon>ModernDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Service\Dialog\MessageDialog\FormDialog\CircleDialog.resx">
+      <DependentUpon>CircleDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Service\Dialog\WaitDialog\FormDialog\ThreadDialog.resx">
+      <DependentUpon>ThreadDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Service\Dialog\WaitDialog\FormDialog\WaitingDialog.resx">
+      <DependentUpon>WaitingDialog.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="MiMFa Framework Icon.ico" />
+    <None Include="Resources\Ring Yellow.png" />
+    <None Include="Resources\Ring Silver.png" />
+    <None Include="Resources\Ring Red.png" />
+    <None Include="Resources\Ring Pink.png" />
+    <None Include="Resources\Ring Orange.png" />
+    <None Include="Resources\Ring Nature.png" />
+    <None Include="Resources\Ring Lavender.png" />
+    <None Include="Resources\Ring Ice.png" />
+    <None Include="Resources\Ring Green.png" />
+    <None Include="Resources\Ring Golden.png" />
+    <None Include="Resources\Ring Fire.png" />
+    <None Include="Resources\Ring Cream.png" />
+    <None Include="Resources\Ring Carbon.png" />
+    <None Include="Resources\Ring Bronze.png" />
+    <None Include="Resources\Ring Blue.png" />
+    <None Include="Resources\Hover-Modern.png" />
+    <None Include="Resources\Light.png" />
+    <None Include="Resources\Dark.png" />
+    <None Include="Resources\Dark4.png" />
+    <None Include="Resources\Dark3.png" />
+    <None Include="Resources\Dark2.png" />
+    <None Include="Resources\Dark1.png" />
+    <None Include="Resources\Dark5.png" />
+    <None Include="Resources\Question_Black.png" />
+    <None Include="Resources\Light3.png" />
+    <None Include="Resources\Light2.png" />
+    <None Include="Resources\Light1.png" />
+    <None Include="Resources\Light5.png" />
+    <None Include="Resources\Light4.png" />
+    <None Include="Resources\Progress_Bar_Crystal.gif" />
+    <None Include="Resources\Progress_Bar.gif" />
+    <None Include="Resources\Progress_Circle.gif" />
+    <None Include="Resources\Microsoft Excel.png" />
+    <None Include="Resources\Export.png" />
+    <None Include="Resources\Cancel.png" />
+    <None Include="Resources\Tick.png" />
+    <None Include="Resources\Shadow-Circle.png" />
+    <None Include="Resources\Frame_Circle_Color.png" />
+    <None Include="Resources\Frame_Circle.png" />
+    <None Include="Resources\Question-White.png" />
+    <None Include="Resources\pause-color.png" />
+    <None Include="Resources\pause-black.png" />
+    <None Include="Resources\navigation-white.png" />
+    <None Include="Resources\navigation-black.png" />
+    <None Include="Resources\minus-white.png" />
+    <None Include="Resources\minus-black.png" />
+    <None Include="Resources\mail-white.png" />
+    <None Include="Resources\mail-black.png" />
+    <None Include="Resources\lock-white.png" />
+    <None Include="Resources\lock-black.png" />
+    <None Include="Resources\location-white.png" />
+    <None Include="Resources\location-black.png" />
+    <None Include="Resources\info-white.png" />
+    <None Include="Resources\info-black.png" />
+    <None Include="Resources\home-white.png" />
+    <None Include="Resources\home-black.png" />
+    <None Include="Resources\heart-white.png" />
+    <None Include="Resources\heart-black.png" />
+    <None Include="Resources\grid-white.png" />
+    <None Include="Resources\grid-black.png" />
+    <None Include="Resources\gear-white.png" />
+    <None Include="Resources\gear-black.png" />
+    <None Include="Resources\forward-white.png" />
+    <None Include="Resources\forward-black.png" />
+    <None Include="Resources\forbidden-white.png" />
+    <None Include="Resources\forbidden-black.png" />
+    <None Include="Resources\fax-white.png" />
+    <None Include="Resources\fax-black.png" />
+    <None Include="Resources\eye-white.png" />
+    <None Include="Resources\eye-black.png" />
+    <None Include="Resources\edit-white.png" />
+    <None Include="Resources\edit-black.png" />
+    <None Include="Resources\delete-white.png" />
+    <None Include="Resources\delete-black.png" />
+    <None Include="Resources\comment-white.png" />
+    <None Include="Resources\comment-black.png" />
+    <None Include="Resources\columns-white.png" />
+    <None Include="Resources\columns-black .png" />
+    <None Include="Resources\cloud-white.png" />
+    <None Include="Resources\cloud-black.png" />
+    <None Include="Resources\clock-white.png" />
+    <None Include="Resources\clock-black.png" />
+    <None Include="Resources\check-white.png" />
+    <None Include="Resources\check-black.png" />
+    <None Include="Resources\carat-u-white.png" />
+    <None Include="Resources\carat-u-black.png" />
+    <None Include="Resources\carat-r-white.png" />
+    <None Include="Resources\carat-r-black.png" />
+    <None Include="Resources\carat-l-white.png" />
+    <None Include="Resources\carat-l-black.png" />
+    <None Include="Resources\carat-d-white.png" />
+    <None Include="Resources\carat-d-black.png" />
+    <None Include="Resources\camera-white.png" />
+    <None Include="Resources\camera-black.png" />
+    <None Include="Resources\calendar-white.png" />
+    <None Include="Resources\calendar-black.png" />
+    <None Include="Resources\bullets-white.png" />
+    <None Include="Resources\bullets-black.png" />
+    <None Include="Resources\bars-white.png" />
+    <None Include="Resources\bars-black.png" />
+    <None Include="Resources\back-white.png" />
+    <None Include="Resources\back-black.png" />
+    <None Include="Resources\audio-white.png" />
+    <None Include="Resources\audio-black.png" />
+    <None Include="Resources\arrow-u-white.png" />
+    <None Include="Resources\arrow-u-r-white.png" />
+    <None Include="Resources\arrow-u-r-black.png" />
+    <None Include="Resources\arrow-u-l-white.png" />
+    <None Include="Resources\arrow-u-l-black.png" />
+    <None Include="Resources\arrow-u-black.png" />
+    <None Include="Resources\arrow-r-white.png" />
+    <None Include="Resources\arrow-r-black.png" />
+    <None Include="Resources\arrow-l-white.png" />
+    <None Include="Resources\arrow-l-black.png" />
+    <None Include="Resources\arrow-d-white.png" />
+    <None Include="Resources\arrow-d-r-white.png" />
+    <None Include="Resources\arrow-d-r-black.png" />
+    <None Include="Resources\arrow-d-l-white.png" />
+    <None Include="Resources\arrow-d-l-black.png" />
+    <None Include="Resources\arrow-d-black.png" />
+    <None Include="Resources\alert-white.png" />
+    <None Include="Resources\alert-black.png" />
+    <None Include="Resources\action-white.png" />
+    <None Include="Resources\action-black.png" />
+    <None Include="Resources\video-white.png" />
+    <None Include="Resources\video-black.png" />
+    <None Include="Resources\user-white.png" />
+    <None Include="Resources\user-black.png" />
+    <None Include="Resources\tag-white.png" />
+    <None Include="Resources\tag-black.png" />
+    <None Include="Resources\stop-color.png" />
+    <None Include="Resources\stop-black.png" />
+    <None Include="Resources\star-white.png" />
+    <None Include="Resources\star-black.png" />
+    <None Include="Resources\shop-white.png" />
+    <None Include="Resources\shop-black.png" />
+    <None Include="Resources\search-white.png" />
+    <None Include="Resources\search-black.png" />
+    <None Include="Resources\right-color.png" />
+    <None Include="Resources\right-black.png" />
+    <None Include="Resources\refresh-white.png" />
+    <None Include="Resources\refresh-black.png" />
+    <None Include="Resources\recycle-white.png" />
+    <None Include="Resources\recycle-black.png" />
+    <None Include="Resources\power-white.png" />
+    <None Include="Resources\power-black.png" />
+    <None Include="Resources\plus-white.png" />
+    <None Include="Resources\plus-black.png" />
+    <None Include="Resources\phone-white.png" />
+    <None Include="Resources\phone-black.png" />
+    <None Include="Resources\Hover.png" />
+    <None Include="Resources\Crack.png" />
+    <None Include="Resources\Robot Broken.png" />
+    <None Include="Resources\Star Silver.png" />
+    <None Include="Resources\Star Red.png" />
+    <None Include="Resources\Star Pink.png" />
+    <None Include="Resources\Star Orange.png" />
+    <None Include="Resources\Star Lavender.png" />
+    <None Include="Resources\Star Ice.png" />
+    <None Include="Resources\Star Green.png" />
+    <None Include="Resources\Star Gold.png" />
+    <None Include="Resources\Star Fire.png" />
+    <None Include="Resources\Star Yellow.png" />
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="Microsoft.Office.Core">
+      <Guid>{2DF8D04C-5BFA-101B-BDE5-00AA0044DE52}</Guid>
+      <VersionMajor>2</VersionMajor>
+      <VersionMinor>8</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="Microsoft.Office.Interop.Access.Dao">
+      <Guid>{4AC9E1DA-5BAD-4AC7-86E3-24F4CDCECA28}</Guid>
+      <VersionMajor>12</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="Microsoft.Office.Interop.Excel">
+      <Guid>{00020813-0000-0000-C000-000000000046}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>9</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="VBIDE">
+      <Guid>{0002E157-0000-0000-C000-000000000046}</Guid>
+      <VersionMajor>5</VersionMajor>
+      <VersionMinor>3</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
