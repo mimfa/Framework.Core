@@ -4,7 +4,7 @@
 		<br>
 		<a href="https://github.com/mimfa">MiMFa</a> <a href="https://github.com/mimfa/Framework.Core">Framework.Core</a>
 	</a>
-	<br><sub>The open-source Core of a big Dot-Net-Based Framework, to makes easy software developments.</sub>
+	<br><sub>The open-source Core of an enterprise Dot-Net-Based Framework, to makes easy software developments.</sub>
 </h1>
 <h2>Dependencies</h2>
 <ol>
