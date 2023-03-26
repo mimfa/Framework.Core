@@ -32,7 +32,7 @@ namespace MiMFa.Exclusive.Security
             return sb.ToString();
         }
 
-        #region توابع رمز نگاری و رمزگشایی
+        #region Cryptography Algorithms
 
         public string ECBPlaintoCipher(string plain, string key, bool auto = true)
         {
@@ -382,7 +382,7 @@ namespace MiMFa.Exclusive.Security
 
         #endregion
 
-        #region توابع اضافی مورد نیاز الگوریتم های رمز نگاری
+        #region Private Algorithms
         private char[] AllChars()
         {
             CharBank cb = new CharBank();

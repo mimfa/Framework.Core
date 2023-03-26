@@ -81,10 +81,10 @@ namespace MiMFa.Interpreters
         /// Initialize the engine
         /// </summary>
         /// <returns></returns>
-        void Initialize();
+        void InitializeEngine();
         void Initialize(bool injectBasic, bool injectDefault);
         void Initialize(params string[] rootAssemblies);
-        void Finalize();
+        void FinalizeEngine();
 
         void InjectBasics();
         void InjectDefaults();

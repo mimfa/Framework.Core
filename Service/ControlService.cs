@@ -1441,6 +1441,7 @@ namespace MiMFa.Service
         }
         public static void DataGridViewRowsOrder(DataGridView dgv, int number, params int[] rowIndices)
         {
+            if (dgv.AllowUserToAddRows && dgv.Rows.Count < 2) return;
             var count = dgv.Rows.Count - (dgv.AllowUserToAddRows ? 1 : 0);
             if (rowIndices.Length == 0)
                 foreach (DataGridViewRow item in dgv.SelectedRows)

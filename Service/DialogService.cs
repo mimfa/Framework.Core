@@ -198,7 +198,16 @@ namespace MiMFa.Service
         }
         public static DialogResult ShowMessage(string message, bool translate = true)
         {
-            return ShowMessage("", MessageMode.Null, translate, message);
+            if(message == null) return ShowMessage("", MessageMode.Null, translate, message);
+            switch (message.Split(':')[0].ToUpper().Trim())
+            {
+                case "SUCC": case "SUCCESS": return ShowMessage(MessageMode.Success, translate, message);
+                case "MSG": case "MESSAGE": return ShowMessage(MessageMode.Message, translate, message);
+                case "ASK": case "QUESTION": return ShowMessage(MessageMode.Question, translate, message);
+                case "ALERT": case "WARNING": return ShowMessage(MessageMode.Warning, translate, message);
+                case "ERR": case "ERROR": return ShowMessage(MessageMode.Error, translate, message);
+                default: return ShowMessage("", MessageMode.Null, translate, message);
+            }
         }
         public static DialogResult ShowMessage(MessageMode messageType, params string[] messages)
         {
