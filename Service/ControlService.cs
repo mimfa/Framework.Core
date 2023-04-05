@@ -462,7 +462,28 @@ namespace MiMFa.Service
         }
 
         #region Panel
-
+        public static int SetControlsTabIndices(Control control, int nest = 15, int startIndex = 1, bool toolstrip = true,params object[] exceptControls)
+        {
+            int num = 0;
+            if (exceptControls.Contains(control)) return num;
+            int startIndex1 = startIndex + 1;
+            int nest1 = nest - 1;
+            if (nest > 0)
+            {
+                if(control is TabControl)
+                    foreach (Control c in ((TabControl)control).TabPages)
+                        num += SetControlsTabIndices(c, nest1, startIndex1, toolstrip, exceptControls);
+                else if (control.Controls.Count > 0)
+                    foreach (Control c in control.Controls)
+                        num += SetControlsTabIndices(c, nest1, startIndex1, toolstrip, exceptControls);
+            }
+            if (control.TabStop)
+            {
+                control.TabIndex = startIndex;
+                return num + 1;
+            }
+            return num;
+        }
         #endregion
 
         #region TextBox

@@ -13,7 +13,7 @@ namespace MiMFa.General
         {
             if (string.IsNullOrWhiteSpace(script)) return null;
             string str = "";
-            string[] commands = script.Split(new string[] { "@@@@@@@@@@","|||||" }, StringSplitOptions.RemoveEmptyEntries);
+            string[] commands = script.Split(new string[] { "@<PAGE>@", "@<COMMAND>@" }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var item in commands)
                 try
                 {

@@ -253,19 +253,21 @@ namespace MiMFa.Exclusive.DateAndTime
         {
             return new SmartDate(0,0,0);
         }
-        #endregion 
+        #endregion
 
-        public SmartDate(int year = 1, int month = 1, int day = 1)
+        public SmartDate() :this(DateTime.UtcNow)
+        {
+        }
+        public SmartDate(DateTime dt) : this(dt.Year,dt.Month,dt.Day)
+        {
+        }
+        public SmartDate(SmartDateTime mdt) : this(mdt.GetYear(), mdt.GetMonth(), mdt.GetDay())
+        {
+            DateTimeStyle = mdt;
+        }
+        public SmartDate(int year, int month = 1, int day = 1)
         {
             SetDate(year, month, day);
-        }
-        public SmartDate(DateTime dt)
-        {
-            SetDate(dt);
-        }
-        public SmartDate(SmartDateTime mdt)
-        {
-            SetDate(mdt);
         }
 
         public void IncrementDay()
@@ -290,7 +292,7 @@ namespace MiMFa.Exclusive.DateAndTime
         }
         public void SetDate(string date)
         {
-            SetDate(ConvertService.ToMiMFaDate(date));
+            SetDate(ConvertService.ToSmartDate(date));
         }
         public void SetDate(double date)
         {
@@ -321,7 +323,7 @@ namespace MiMFa.Exclusive.DateAndTime
         }
         public static string GetDate(SmartDate date)
         {
-            return string.Format("{0:d2}/{1:d2}/{2:d4}", date.Day, date.Month, date.Year);
+            return string.Format("{0:d4}-{1:d2}-{2:d2}", date.Year, date.Month, date.Day);
         }
 
         #region Service

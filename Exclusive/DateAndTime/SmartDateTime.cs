@@ -12,7 +12,7 @@ namespace MiMFa.Exclusive.DateAndTime
     [Serializable]
     public class SmartDateTime
     {
-        public Calendar ZoneCalendar = new PersianCalendar();
+        public Calendar ZoneCalendar = new GregorianCalendar();
         public TimeZoneMode TimeZone
         {
             get { return _TimeZone; }
@@ -54,62 +54,79 @@ namespace MiMFa.Exclusive.DateAndTime
                 _TimeZone = value;
             }
         }
-        private TimeZoneMode _TimeZone = TimeZoneMode.IranStandard;
+        private TimeZoneMode _TimeZone = TimeZoneMode.Null;
+        public DateTime DateTime { get => _DateTime??(_TimeZone == TimeZoneMode.Null? DateTime.Now : DateTime.UtcNow); set=> _DateTime=value; }
+        private DateTime? _DateTime = null;
 
         public SmartDateTime()
-        { }
-        public SmartDateTime(TimeZoneMode timeZone = TimeZoneMode.IranStandard)
+        {
+
+        }
+        public SmartDateTime(TimeZoneMode timeZone = TimeZoneMode.Null)
         {
             TimeZone = timeZone;
         }
-
-        public SmartDate GetDatePAC()
+        public SmartDateTime(DateTime dateTime, TimeZoneMode timeZone = TimeZoneMode.Null)
         {
-            DateTime dt = DateTime.Now;
-            if (ZoneCalendar == null)
-                return new SmartDate(dt.Year, dt.Month, dt.Day);
-            else
-                return new SmartDate(ZoneCalendar.GetYear(dt), ZoneCalendar.GetMonth(dt), ZoneCalendar.GetDayOfMonth(dt));
+            TimeZone = timeZone;
+            DateTime = dateTime;
         }
-        public string GetDate()
+
+        public override string ToString()
         {
-            DateTime dt = DateTime.Now;
-            if (ZoneCalendar == null)
-                return string.Format("{0:d2}\\{1:d2}\\{2:d4}", dt.Day, dt.Month, dt.Year);
-            else
-                return string.Format("{0:d2}\\{1:d2}\\{2:d4}", ZoneCalendar.GetDayOfMonth(dt), ZoneCalendar.GetMonth(dt), ZoneCalendar.GetYear(dt));
+            return GetDateTime();
+        }
+        public string ToString(string format)
+        {
+            return GetDateTime(format);
+        }
+
+        public string GetDateTime(string format = "{0:d4}-{1:d2}-{2:d2} {3:d2}:{4:d2}:{5:d2}")
+        {
+            DateTime dt = DateTime;
+            if (_TimeZone == TimeZoneMode.Null)
+                return string.Format(format, dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second);
+            return string.Format(format, ZoneCalendar.GetYear(dt), ZoneCalendar.GetMonth(dt), ZoneCalendar.GetDayOfMonth(dt), ZoneCalendar.GetHour(dt), ZoneCalendar.GetMinute(dt), ZoneCalendar.GetSecond(dt));
+        }
+
+
+        public SmartDate GetSmartDate()
+        {
+            DateTime dt = DateTime;
+            if (_TimeZone == TimeZoneMode.Null)
+                return new SmartDate(dt.Year, dt.Month, dt.Day);
+            return new SmartDate(ZoneCalendar.GetYear(dt), ZoneCalendar.GetMonth(dt), ZoneCalendar.GetDayOfMonth(dt));
+        }
+        public string GetDate(string format = "{0:d4}-{1:d2}-{2:d2}")
+        {
+            DateTime dt = DateTime;
+            if (_TimeZone == TimeZoneMode.Null)
+                return string.Format(format, dt.Year, dt.Month, dt.Day);
+            return string.Format(format, ZoneCalendar.GetYear(dt), ZoneCalendar.GetMonth(dt), ZoneCalendar.GetDayOfMonth(dt));
         }
         public int GetYear()
         {
-            DateTime dt = DateTime.Now;
-            if (ZoneCalendar == null)
-                return dt.Year;
-            else
-                return ZoneCalendar.GetYear(dt);
+            if (_TimeZone == TimeZoneMode.Null)
+                return DateTime.Year;
+            return ZoneCalendar.GetYear(DateTime);
         }
         public int GetMonth()
         {
-            DateTime dt = DateTime.Now;
-            if (ZoneCalendar == null)
-                return dt.Month;
-            else
-                return ZoneCalendar.GetMonth(dt);
+            if (_TimeZone == TimeZoneMode.Null)
+                return DateTime.Month;
+            return ZoneCalendar.GetMonth(DateTime);
         }
         public int GetDay()
         {
-            DateTime dt = DateTime.Now;
-            if (ZoneCalendar == null)
-                return dt.Day;
-            else
-                return ZoneCalendar.GetDayOfMonth(dt);
+            if (_TimeZone == TimeZoneMode.Null)
+                return DateTime.Day;
+            return ZoneCalendar.GetDayOfMonth(DateTime);
         }
         public DayOfWeek GetDayOfWeek()
         {
-            DateTime dt = DateTime.Now;
-            if (ZoneCalendar == null)
-                return dt.DayOfWeek;
-            else
-                return ZoneCalendar.GetDayOfWeek(dt);
+            if (_TimeZone == TimeZoneMode.Null)
+                return DateTime.DayOfWeek;
+            return ZoneCalendar.GetDayOfWeek(DateTime);
         }
         public int GetDayOfWeekNumber()
         {
@@ -117,55 +134,51 @@ namespace MiMFa.Exclusive.DateAndTime
         }
         public string GetDayOfWeekName(int dayOfWeek = -1)
         {
-            if (dayOfWeek < 0) return ConvertService.ToDayOfWeekName(this.GetDatePAC(), this);
+            if (dayOfWeek < 0) return ConvertService.ToDayOfWeekName(this.GetSmartDate(), this);
             return ConvertService.ToDayOfWeekName(dayOfWeek, this);
         }
         public string GetMonthName()
         {
-            return ConvertService.ToMonthName(GetDatePAC(), this);
+            return ConvertService.ToMonthName(GetSmartDate(), this);
         }
         public int GetDayOfYear()
         {
-            DateTime dt = DateTime.Now;
-            if (ZoneCalendar == null)
-                return dt.DayOfYear;
-            else
-                return ZoneCalendar.GetDayOfYear(dt);
+            if (_TimeZone == TimeZoneMode.Null)
+                return DateTime.DayOfYear;
+            return ZoneCalendar.GetDayOfYear(DateTime);
         }
 
-        public SmartTime GetTimePAC()
+        public SmartTime GetSmartTime()
         {
-            DateTime dt = DateTime.Now;
-            return new SmartTime( dt.Hour, dt.Minute, dt.Second);
+            DateTime dt = DateTime;
+            if (_TimeZone == TimeZoneMode.Null)
+                return new SmartTime(dt.Hour, dt.Minute, dt.Second);
+            return new SmartTime(ZoneCalendar.GetHour(dt), ZoneCalendar.GetMinute(dt), ZoneCalendar.GetSecond(dt));
         }
-        public string GetTime()
+        public string GetTime(string format = "{0:d2}:{1:d2}:{2:d2}")
         {
-            DateTime dt = DateTime.Now;
-            return string.Format("{0:d2}:{1:d2}:{2:d2}", dt.Hour, dt.Minute, dt.Second);
+            DateTime dt = DateTime;
+            if (_TimeZone == TimeZoneMode.Null)
+                return string.Format(format, dt.Hour, dt.Minute, dt.Second);
+            return string.Format(format, ZoneCalendar.GetHour(dt), ZoneCalendar.GetMinute(dt), ZoneCalendar.GetSecond(dt));
         }
         public int GetHour()
         {
-            DateTime dt = DateTime.Now;
-            if (ZoneCalendar == null)
-                return dt.Hour;
-            else
-                return ZoneCalendar.GetHour(dt);
+            if (_TimeZone == TimeZoneMode.Null)
+                return DateTime.Hour;
+            return ZoneCalendar.GetHour(DateTime);
         }
         public int GetMinute()
         {
-            DateTime dt = DateTime.Now;
-            if (ZoneCalendar == null)
-                return dt.Minute;
-            else
-                return ZoneCalendar.GetMinute(dt);
+            if (_TimeZone == TimeZoneMode.Null)
+                return DateTime.Minute;
+            return ZoneCalendar.GetMinute(DateTime);
         }
         public int GetSecond()
         {
-            DateTime dt = DateTime.Now;
-            if (ZoneCalendar == null)
-                return dt.Second;
-            else
-                return ZoneCalendar.GetSecond(dt);
+            if (_TimeZone == TimeZoneMode.Null)
+                return DateTime.Second;
+            return ZoneCalendar.GetSecond(DateTime);
         }
         public Color GetSkyColor()
         {
@@ -199,32 +212,38 @@ namespace MiMFa.Exclusive.DateAndTime
             }
         }
 
-        public static SmartTime GetThisTimePAC()
-        {
-            DateTime dt = DateTime.Now;
-            return new SmartTime(dt.Hour, dt.Minute, dt.Second);
-        }
-        public static string GetThisTime()
-        {
-            DateTime dt = DateTime.Now;
-            return string.Format("{0:d2}:{1:d2}:{2:d2}", dt.Hour, dt.Minute, dt.Second);
-        }
-
-        public static SmartDate GetThisDatePAC(Calendar zoneCalendar)
+        public static SmartDate GetCurrentSmartDate(Calendar zoneCalendar = null)
         {
             DateTime dt = DateTime.Now;
             if (zoneCalendar == null)
                 return new SmartDate(dt.Year, dt.Month, dt.Day);
-            else
-                return new SmartDate(zoneCalendar.GetYear(dt), zoneCalendar.GetMonth(dt), zoneCalendar.GetDayOfMonth(dt));
+            dt = DateTime.UtcNow;
+            return new SmartDate(zoneCalendar.GetYear(dt), zoneCalendar.GetMonth(dt), zoneCalendar.GetDayOfMonth(dt));
         }
-        public static string GetThisDate(Calendar zoneCalendar)
+        public static string GetCurrentDate(string format = "{0:d4}-{1:d2}-{2:d2}", Calendar zoneCalendar = null)
         {
             DateTime dt = DateTime.Now;
             if (zoneCalendar == null)
-                return string.Format("{0:d2}\\{1:d2}\\{2:d4}", dt.Day, dt.Month, dt.Year);
-            else
-                return string.Format("{0:d2}\\{1:d2}\\{2:d4}", zoneCalendar.GetDayOfMonth(dt), zoneCalendar.GetMonth(dt), zoneCalendar.GetYear(dt));
+                return string.Format(format, dt.Year, dt.Month, dt.Day);
+            dt = DateTime.UtcNow;
+            return string.Format(format, zoneCalendar.GetYear(dt), zoneCalendar.GetMonth(dt), zoneCalendar.GetDayOfMonth(dt));
         }
-    }
+
+        public static SmartTime GetCurrentSmartTime(Calendar zoneCalendar = null)
+        {
+            DateTime dt = DateTime.Now;
+            if (zoneCalendar == null)
+            return new SmartTime(dt.Hour, dt.Minute, dt.Second);
+            dt = DateTime.UtcNow;
+            return new SmartTime(zoneCalendar.GetHour(dt), zoneCalendar.GetMinute(dt), zoneCalendar.GetSecond(dt));
+        }
+        public static string GetCurrentTime(string format = "{0:d2}:{1:d2}:{2:d2}", Calendar zoneCalendar = null)
+        {
+            DateTime dt = DateTime.Now;
+            if (zoneCalendar == null)
+                return string.Format(format, dt.Hour, dt.Minute, dt.Second);
+            dt = DateTime.UtcNow;
+            return string.Format(format, zoneCalendar.GetHour(dt), zoneCalendar.GetMinute(dt), zoneCalendar.GetSecond(dt));
+        }
+}
 }

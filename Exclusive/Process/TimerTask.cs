@@ -13,8 +13,8 @@ namespace MiMFa.Exclusive.Process
         public bool IsWatching { get; protected set; } = false;
         public bool IsFreezed => Watcher == null ? false : LatestWatching < DateTime.UtcNow.AddSeconds(-FreezingTime);
         public int FreezingTime { get; protected set; } = 60 * 15;
-        public DateTime StartTime { get; protected set; } = Default.SystemTime;
-        public DateTime LatestWatching { get; protected set; } = Default.SystemTime;
+        public DateTime StartTime { get; protected set; } = Default.SystemDateTime;
+        public DateTime LatestWatching { get; protected set; } = Default.SystemDateTime;
         public int Interval { get; set; } = 1000;
         public long RunTick { get; protected set; } = 1;
         public Timer Watcher { get; protected set; } = null;
@@ -35,7 +35,7 @@ namespace MiMFa.Exclusive.Process
             Watcher.Elapsed += WatcherElapsed;
             IsWatching = false;
             StartTime =
-            LatestWatching =Default.SystemTime;
+            LatestWatching =Default.SystemDateTime;
             try { Watcher.Start(); } catch { }
         }
 
@@ -47,7 +47,7 @@ namespace MiMFa.Exclusive.Process
                 IsWatching = true;
                 if (WatchAction != null) WatchAction(this,e);
                 RunTick++;
-                LatestWatching = Default.SystemTime;
+                LatestWatching = Default.SystemDateTime;
             }
             finally { IsWatching = false; }
         }

@@ -191,7 +191,7 @@ namespace MiMFa.Exclusive.DateAndTime
 
         public static explicit operator SmartTime(DateTime op1)
         {
-            return ConvertService.ToMiMFaTime(op1);
+            return ConvertService.ToSmartTime(op1);
         }
         public static explicit operator SmartTime(SmartDateTime dateTime)
         {
@@ -201,7 +201,7 @@ namespace MiMFa.Exclusive.DateAndTime
         }
         public static explicit operator SmartTime(string op1)
         {
-            return ConvertService.ToMiMFaTime(op1);
+            return ConvertService.ToSmartTime(op1);
         }
         public static explicit operator SmartTime(double op1)
         {
@@ -288,17 +288,18 @@ namespace MiMFa.Exclusive.DateAndTime
         }
         #endregion
 
+        public SmartTime():this(DateTime.UtcNow)
+        {
+        }
+        public SmartTime(DateTime dt):this(dt.TimeOfDay.Hours, dt.TimeOfDay.Minutes, dt.TimeOfDay.Seconds)
+        {
+        }
+        public SmartTime(SmartDateTime mdt):this(mdt.GetHour(), mdt.GetMinute(), mdt.GetSecond())
+        {
+        }
         public SmartTime(long hour = 0, long min = 0, long sec = 0)
         {
             SetTime(hour, min, sec);
-        }
-        public SmartTime(DateTime dt)
-        {
-            SetTime(dt.TimeOfDay.Hours, dt.TimeOfDay.Minutes, dt.TimeOfDay.Seconds);
-        }
-        public SmartTime(SmartDateTime mdt)
-        {
-            SetTime(mdt);
         }
 
         public void IncrementSecond()
@@ -326,7 +327,7 @@ namespace MiMFa.Exclusive.DateAndTime
         }
         public void SetTime(string time)
         {
-            SetTime(ConvertService.ToMiMFaTime(time));
+            SetTime(ConvertService.ToSmartTime(time));
         }
         public void SetTime(double date)
         {

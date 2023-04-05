@@ -45,17 +45,61 @@ namespace MiMFa.Service
                 select new { Key = v.UID, Value = v.Name }
                 ).ToDictionary(x => x.Key, x => x.Value);
         }
-
-        public static SmartTime ToMiMFaTime(string op1)
+      
+        public static DateTime ToDateTime(string op)
         {
-            string[] sta = op1.Replace(" ", "/").Split(new char[] { ':', '-', '_', ',', '/', '\\', '.', ';' },StringSplitOptions.RemoveEmptyEntries);
-            if (sta.Length > 2) return new SmartTime(int.Parse(sta[0]), int.Parse(sta[1]), int.Parse(sta[2]));
-            if (sta.Length > 2) return new SmartTime(0, int.Parse(sta[0]), int.Parse(sta[1]));
-            var v = new SmartTime(0, 0, 0);
-            if (sta.Length > 0) v.Second = int.Parse(sta[0]);
-            return v;
+            if (string.IsNullOrWhiteSpace(op)) return default;
+            string[] stra = op.Trim().Split(' ');
+            if (stra.Length == 2)
+            {
+                var d = ToSmartDate(stra[0]);
+                var t = ToSmartTime(stra[1]);
+                if (d.Month > 12 || d.Month < 1 || d.Day > 31 || d.Day < 1)
+                    d = ToSmartDate(stra[1]);
+                if (t.Hour > 23 || t.Hour < 0 || t.Minute > 59 || t.Minute < 0 || t.Second > 59 || t.Second < 0)
+                    t = ToSmartTime(stra[0]);
+                if (d.Month > 12 || d.Month < 1 || d.Day > 31 || d.Day < 1)
+                    d = ToSmartDate(stra[0]);
+                if (t.Hour > 23 || t.Hour < 0 || t.Minute > 59 || t.Minute < 0 || t.Second > 59 || t.Second < 0)
+                    t = ToSmartTime(stra[1]);
+                return new DateTime(d.Year, d.Month, d.Day, (int)t.Hour, (int)t.Minute, (int)t.Second);
+            }
+            else
+            {
+                var d = ToSmartDate(op);
+                var t = ToSmartTime(op);
+                if (t.Hour > 23 || t.Minute > 59 || t.Second > 59) t = t = new SmartTime();
+                if (d.Month > 12 || d.Day > 31) d = new SmartDate();
+                return new DateTime(d.Year, d.Month, d.Day, (int)t.Hour, (int)t.Minute, (int)t.Second);
+            }
         }
-        public static SmartDate ToMiMFaDate(string op1)
+        public static DateTime ToDateTime(SmartDate date)
+        {
+            return date.GetDateTime();
+        }
+        public static DateTime ToDateTime(SmartTime time)
+        {
+            return time.GetDateTime();
+        }
+
+        public static SmartDateTime ToSmartDateTime(string op)
+        {
+            return new SmartDateTime(ToDateTime(op));
+        }
+        public static SmartDateTime ToSmartDateTime(DateTime op)
+        {
+            return new SmartDateTime(op);
+        }
+        public static SmartDateTime ToSmartDateTime(SmartDate date)
+        {
+            return new SmartDateTime(ToDateTime(date));
+        }
+        public static SmartDateTime ToSmartDateTime(SmartTime time)
+        {
+            return new SmartDateTime(ToDateTime(time));
+        }
+
+        public static SmartDate ToSmartDate(string op1)
         {
             string[] sta = op1.Replace(" ", "/").Split(new char[]{ '/', '-', '_', ',', ':', '\\', '.', ';' }, StringSplitOptions.RemoveEmptyEntries);
             if (sta.Length > 2)
@@ -75,50 +119,25 @@ namespace MiMFa.Service
             if (sta.Length >0) v.IncrimentDay(int.Parse(sta[0]));
             return v;
         }
-        public static DateTime ToDateTime(string op)
-        {
-            if (string.IsNullOrWhiteSpace(op)) return default;
-            string[] stra = op.Trim().Split(' ');
-            if (stra.Length == 2)
-            {
-                var d = ToMiMFaDate(stra[0]);
-                var t = ToMiMFaTime(stra[1]);
-                if (d.Month > 12 || d.Month < 1 || d.Day > 31 || d.Day < 1)
-                    d = ToMiMFaDate(stra[1]);
-                if (t.Hour > 23 || t.Hour < 0 || t.Minute > 59 || t.Minute < 0 || t.Second > 59 || t.Second < 0)
-                    t = ToMiMFaTime(stra[0]);
-                if (d.Month > 12 || d.Month < 1 || d.Day > 31 || d.Day < 1)
-                    d = ToMiMFaDate(stra[0]);
-                if (t.Hour > 23 || t.Hour < 0 || t.Minute > 59 || t.Minute < 0 || t.Second > 59 || t.Second < 0)
-                    t = ToMiMFaTime(stra[1]);
-                return new DateTime(d.Year, d.Month, d.Day, (int)t.Hour, (int)t.Minute, (int)t.Second);
-            }
-            else
-            {
-                var d = ToMiMFaDate(op);
-                var t = ToMiMFaTime(op);
-                if (t.Hour > 23 || t.Minute > 59 || t.Second > 59) t = t = new SmartTime();
-                if (d.Month > 12 || d.Day > 31) d = new SmartDate();
-                return new DateTime(d.Year, d.Month, d.Day, (int)t.Hour, (int)t.Minute, (int)t.Second);
-            }
-        }
-        public static SmartDate ToMiMFaDate(DateTime dateTime)
+        public static SmartDate ToSmartDate(DateTime dateTime)
         {
             return new SmartDate(dateTime.Year, dateTime.Month, dateTime.Day);
         }
         
-        public static SmartTime ToMiMFaTime(DateTime dateTime)
+        public static SmartTime ToSmartTime(string op1)
+        {
+            string[] sta = op1.Replace(" ", "/").Split(new char[] { ':', '-', '_', ',', '/', '\\', '.', ';' },StringSplitOptions.RemoveEmptyEntries);
+            if (sta.Length > 2) return new SmartTime(int.Parse(sta[0]), int.Parse(sta[1]), int.Parse(sta[2]));
+            if (sta.Length > 2) return new SmartTime(0, int.Parse(sta[0]), int.Parse(sta[1]));
+            var v = new SmartTime(0, 0, 0);
+            if (sta.Length > 0) v.Second = int.Parse(sta[0]);
+            return v;
+        }
+        public static SmartTime ToSmartTime(DateTime dateTime)
         {
             return new SmartTime(dateTime.Hour, dateTime.Minute, dateTime.Second);
         }
-        public static DateTime ToDateTime(SmartDate date)
-        {
-            return date.GetDateTime();
-        }
-        public static DateTime ToDateTime(SmartTime time)
-        {
-            return time.GetDateTime();
-        }
+
         public static int ToHijriDayOfWeekNum(DayOfWeek dow)
         {
             switch (dow)
@@ -148,7 +167,7 @@ namespace MiMFa.Service
         }
         public static int ToDayOfWeekNum(SmartDate date, SmartDateTime dateTime)
         {
-            SmartDate now = dateTime.GetDatePAC();
+            SmartDate now = dateTime.GetSmartDate();
             int dow = dateTime.GetDayOfWeekNumber();
             int toleranse = now.GetLengthDay(date);
             int day = Math.Abs(toleranse % 7);
