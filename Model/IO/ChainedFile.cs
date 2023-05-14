@@ -1656,15 +1656,22 @@ namespace MiMFa.Model.IO
             //return Copy(dir, overrideIfExists);
             string path = overrideIfExists? dir.TrimEnd(System.IO.Path.DirectorySeparatorChar)+ System.IO.Path.DirectorySeparatorChar.ToString() + Name
                 : PathService.CreateValidPathName(dir, NameWithoutExtension, Extension, false);
-            CreateConnector(path, Encoding).WriteLines(ReadLines());
-            return path;
+            if(Export(path)) return path;
+            else return null;
         }
         public bool Export(string path)
         {
             //if (!Save()) return false;
             //Copy(path);
-            CreateConnector(path, Encoding).ReadLines();
-            return true;
+            switch (System.IO.Path.GetExtension(path))
+            {
+                case ".xls":
+                case ".xlsx":
+                    ConvertService.ToExcelFile(this, path);
+                    return true;
+                default:
+                    return CreateConnector(path, Encoding).WriteLines(ReadLines()) >= LinesCount;
+            }
         }
         public bool Stick()
         {

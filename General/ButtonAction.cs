@@ -29,7 +29,7 @@ namespace MiMFa.General
             if (FirstSize == new Size(0, 0))
                 if (mainForm.Size == Screen.PrimaryScreen.Bounds.Size)
                 {
-                    FirstSize = new Size(600,480);
+                    FirstSize = new Size(800,600);
                     FirstLocation = mainForm.Location;
                 }
                 else
