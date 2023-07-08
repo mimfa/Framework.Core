@@ -22,7 +22,6 @@ D:\MiMFa\My Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\Mi
 D:\MiMFa\My Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\HtmlAgilityPack.dll
 D:\MiMFa\My Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\HtmlAgilityPack.pdb
 D:\MiMFa\My Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\HtmlAgilityPack.xml
-D:\MiMFa\My Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.csproj.AssemblyReference.cache
 D:\MiMFa\My Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.csproj.ResolveComReference.cache
 D:\MiMFa\My Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.Controls.WinForm.ScrollBar.HorizontalScrollBar.resources
 D:\MiMFa\My Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.Controls.WinForm.ScrollBar.VerticalScrollBar.resources
@@ -36,3 +35,24 @@ D:\MiMFa\My Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\Mi
 D:\MiMFa\My Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.csproj.CopyComplete
 D:\MiMFa\My Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa Framework.dll
 D:\MiMFa\My Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa Framework.pdb
+D:\MiMFa\My Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.csproj.AssemblyReference.cache
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\MiMFa Framework.dll.config
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\MiMFa Framework.dll
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\MiMFa Framework.pdb
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\HtmlAgilityPack.dll
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\HtmlAgilityPack.pdb
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\HtmlAgilityPack.xml
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.csproj.ResolveComReference.cache
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.Controls.WinForm.ScrollBar.HorizontalScrollBar.resources
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.Controls.WinForm.ScrollBar.VerticalScrollBar.resources
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.Properties.Resources.resources
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.Service.Dialog.MessageDialog.FormDialog.ModernDialog.resources
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.Service.Dialog.MessageDialog.FormDialog.CircleDialog.resources
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.Service.Dialog.WaitDialog.FormDialog.ThreadDialog.resources
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.Service.Dialog.WaitDialog.FormDialog.WaitingDialog.resources
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.csproj.GenerateResource.cache
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.csproj.CoreCompileInputs.cache
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.csproj.CopyComplete
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa Framework.dll
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa Framework.pdb
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.csprojAssemblyReference.cache

@@ -635,6 +635,26 @@ namespace MiMFa.Service
         #endregion
 
         #region  Network
+        public static string GetPublicLocation()
+        {
+            string address = null;
+            WebRequest request = WebRequest.Create("https://www.iplocation.net/");
+            var t = request.GetResponseAsync();
+            try
+            {
+                t.Wait(new TimeSpan(0, 0, 5));
+                using (WebResponse response = t.Result)
+                    if (response != null)
+                        using (StreamReader stream = new StreamReader(response.GetResponseStream()))
+                        {
+                            address = stream.ReadToEnd();
+                        }
+            }
+            catch { }
+            if (string.IsNullOrWhiteSpace(address)) return null;
+            var m = Regex.Match(address, "(?<=\\<span class=\"ipinfo\\-+location\\s*\"\\>)[^\\<]+(?=\\<)");
+            return m.Success?StringService.FromHTML(m.Value).Trim():null;
+        }
         public static IPAddress GetPublicIP()
         {
             string address = null;

@@ -688,7 +688,7 @@ namespace MiMFa.Service
         }
         public static SmartDictionary<T, F> ConcatWith<T, F>(SmartDictionary<T, F> dic, params KeyValuePair<T, F>[] args)
         {
-            return Concat(dic, ConvertService.ToMiMFaDictionary(args));
+            return Concat(dic, ConvertService.ToSmartDictionary(args));
         }
         public static SmartKeyValueList<T, F> ConcatWith<T, F>(SmartKeyValueList<T, F> dic, params SmartKeyValue<T, F>[] args)
         {

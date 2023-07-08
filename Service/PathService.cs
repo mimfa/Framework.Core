@@ -224,17 +224,23 @@ namespace MiMFa.Service
                             yield return file;
             }
         }
-        public static void CreateFile(string FileAddress)
+        public static bool CreateFile(string FileAddress)
         {
             if (!File.Exists(FileAddress))
             {
                 File.Create(FileAddress);
+                return true;
             }
+            return false;
         }
-        public static void CreateDirectory(string DirectoryAddress)
+        public static bool CreateDirectory(string DirectoryAddress)
         {
             if (!Directory.Exists(DirectoryAddress))
+            {
                 Directory.CreateDirectory(DirectoryAddress);
+                return true;
+            }
+            return false;
         }
         public static void CreateAllDirectories(string DirectoryAddress)
         {

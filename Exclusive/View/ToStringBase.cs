@@ -96,7 +96,7 @@ namespace MiMFa.Exclusive.View
             if (AllowDictionary &&( t is IDictionary || tn.StartsWith("dictionary") || tn.StartsWith("mimfa_dictionary")))
                 return Done(ConvertService.ToDictionary(obj));
             if (AllowDictionary && (tn.StartsWith("mimfa_matrix")))
-                return Done(ConvertService.ToMiMFaMatrix(obj));
+                return Done(ConvertService.ToMatrix(obj));
             if (AllowKeyValuePair && tn.StartsWith("keyvaluepair"))
                 return Done(ConvertService.ToKeyValuePair(obj));
             if (AllowDataTable && tn.StartsWith("datatable"))

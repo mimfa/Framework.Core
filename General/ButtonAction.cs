@@ -55,7 +55,7 @@ namespace MiMFa.General
                 default:
                     mainForm.WindowState = FormWindowState.Normal;
                     mainForm.Location = new Point(0, 0);
-                    mainForm.Size = new Size(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height-30);
+                    mainForm.Size = new Size(Screen.PrimaryScreen.Bounds.Width, Convert.ToInt32(Screen.PrimaryScreen.Bounds.Height*0.95));
                     break;
             }
         }

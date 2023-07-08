@@ -1037,7 +1037,7 @@ namespace MiMFa.Service
             browser.Refresh();
             return browser.Document;
         }
-        public static XMLElement ToMiMFaHTMLElement(HtmlElement html,int childindex = 0, XMLElement parent = null)
+        public static XMLElement ToHTMLElement(HtmlElement html,int childindex = 0, XMLElement parent = null)
         {
             string[] stra = new string[] { "<" + html.TagName + ">" };
             string s = "", e = "";
@@ -1057,10 +1057,10 @@ namespace MiMFa.Service
             s = stra.First().Trim();
             XMLElement p = new XMLElement(childindex, html.TagName,s,e,null, parent);
             for (int i = 0; i < html.Children.Count; i++)
-                p.Children.Add(ToMiMFaHTMLElement(html.Children[i], i, p));
+                p.Children.Add(ToHTMLElement(html.Children[i], i, p));
             return p;
         }
-        public static List<XMLElement> ToMiMFaHTMLElements(WebBrowser wb, bool quick = false)
+        public static List<XMLElement> ToHTMLElements(WebBrowser wb, bool quick = false)
         {
             //string html =
             //@"
@@ -1114,23 +1114,23 @@ namespace MiMFa.Service
             //}
             ////
             string html = wb.DocumentText;
-            return ToMiMFaHTMLElements(html, quick);
+            return ToHTMLElements(html, quick);
         }
-        public static List<XMLElement> ToMiMFaHTMLElements( HtmlElementCollection elems)
+        public static List<XMLElement> ToHTMLElements( HtmlElementCollection elems)
         {
             List<XMLElement> res = new List<XMLElement>();
             for (int i = 0; i < elems.Count; i++)
-                res.Add(ToMiMFaHTMLElement(elems[i], i, null));
+                res.Add(ToHTMLElement(elems[i], i, null));
             return res;
         }
-        public static List<XMLElement> ToMiMFaHTMLElements(params HtmlElement[] elems)
+        public static List<XMLElement> ToHTMLElements(params HtmlElement[] elems)
         {
             List<XMLElement> res = new List<XMLElement>();
             for (int i = 0; i < elems.Length; i++)
-                res.Add(ToMiMFaHTMLElement(elems[i], i, null));
+                res.Add(ToHTMLElement(elems[i], i, null));
             return res;
         }
-        public static List<XMLElement> ToMiMFaHTMLElements(string html, bool quick = false)
+        public static List<XMLElement> ToHTMLElements(string html, bool quick = false)
         {
             Pickup mscriptp = new Pickup("" + "[|SCRIPT|]" + "", "<SCRIPT", "</SCRIPT>", false);
             Pickup mxmpp = new Pickup("" + "[|XMP|]" + "", "<XMP", "</XMP>", false);
@@ -1139,7 +1139,7 @@ namespace MiMFa.Service
             html = mxmpp.Pick(html);
             html = mcodep.Pick(html);
             if (quick) html = mscriptp.ParseTo(html, "");
-            var res = ToMiMFaXMLElements(html);
+            var res = ToXMLElements(html);
             for (int i = 0; i < res.Count; i++)
                 res[i] = parse1(res[i],
                     mcodep,
@@ -1387,8 +1387,8 @@ namespace MiMFa.Service
         }
         #endregion
 
-        #region Other      
-        public static SmartDictionary<T,F> ToMiMFaDictionary<T,F>(params KeyValuePair<T,F>[] args)
+        #region Objects
+        public static SmartDictionary<T,F> ToSmartDictionary<T,F>(params KeyValuePair<T,F>[] args)
         {
             SmartDictionary<T, F> dic = new SmartDictionary<T, F>();
             for (int i = 0; i < args.Length; i++)
@@ -1413,9 +1413,6 @@ namespace MiMFa.Service
             }
             return string.Join("", Math.Round(value, decimals), startDelimited, universalUnits[ui],endDelimited);
         }
-        #endregion
-
-        #region Objects     
         public static object[] ToArray(object obj)
         {
             if (obj == null) return null;
@@ -1434,6 +1431,10 @@ namespace MiMFa.Service
                 lo.Add(Inewobj[i]);
             return lo;
         }
+        public static Dictionary<string, string> ToDictionary(string text, string keyValueSplitor = "\t", string lineSplitor = "'r'n", bool keysToLower = false)
+        {
+            return ToDictionary(text.Split(new string[] { lineSplitor }, StringSplitOptions.None), keyValueSplitor, keysToLower);
+        }
         public static Dictionary<string, string> ToDictionary(IEnumerable<string> lines, string SplitChar, bool keysToLower = false)
         {
             Dictionary<string, string> Dic = new Dictionary<string, string>();
@@ -1447,6 +1448,10 @@ namespace MiMFa.Service
                 else Dic.Add(key, "");
             }
             return Dic;
+        }
+        public static SmartDictionary<string, string> ToSmartDictionary(string text, string keyValueSplitor="\t", string lineSplitor="'r'n", bool keysToLower = false)
+        {
+            return ToSmartDictionary(text.Split(new string[] { lineSplitor },StringSplitOptions.None), keyValueSplitor,  keysToLower);
         }
         public static SmartDictionary<string, string> ToSmartDictionary(IEnumerable<string> lines, string SplitChar, bool keysToLower = false)
         {
@@ -1470,7 +1475,11 @@ namespace MiMFa.Service
                 dic.Add(item.Key, item.Value);
             return dic;
         }
-        public static IEnumerable<KeyValuePair<string, string>> ToKeyValuePairs(IEnumerable<string> lines, string SplitChar)
+        public static IEnumerable<KeyValuePair<string, string>> ToKeyValuePairs(string text, string keyValueSplitor="\t", string lineSplitor="'r'n", bool keysToLower = false)
+        {
+            return ToKeyValuePairs(text.Split(new string[] { lineSplitor }, StringSplitOptions.None), keyValueSplitor, keysToLower);
+        }
+        public static IEnumerable<KeyValuePair<string, string>> ToKeyValuePairs(IEnumerable<string> lines, string SplitChar, bool keysToLower = false)
         {
             string key = "";
             string value = "";
@@ -1485,7 +1494,7 @@ namespace MiMFa.Service
                         key = "";
                         value = "";
                     }
-                    key = ma.First();
+                    key = keysToLower? ma.First().ToLower():ma.First();
                     value = ma.Last();
                 }
                 else value += ma.First();
@@ -1494,7 +1503,7 @@ namespace MiMFa.Service
             if (!string.IsNullOrEmpty(key)|| !string.IsNullOrEmpty(value))
                 yield return new KeyValuePair<string, string>(key, value);
         }
-        public static Matrix<object> ToMiMFaMatrix(dynamic obj)
+        public static Matrix<object> ToMatrix(dynamic obj)
         {
             if (!InfoService.IsMatrix(obj)) return null;
             Matrix<object> mat = new Matrix<object>();
@@ -1582,7 +1591,7 @@ namespace MiMFa.Service
                 lo.Push(lt[i]);
             return lo;
         }
-        public static SmartStack<object> ToMiMFaStack<T>(SmartStack<T> arg)
+        public static SmartStack<object> ToSmartStack<T>(SmartStack<T> arg)
         {
             if (arg == null) return null;
             SmartStack<object> lo = new SmartStack<object>();
@@ -1989,13 +1998,13 @@ namespace MiMFa.Service
             catch { return null; }
             finally { MyConnection.Close(); }
         }
-        public static SmartTable ToMiMFaTable(string exceladdress, string sheetName, string condition = "")
+        public static SmartTable ToSmartTable(string exceladdress, string sheetName, string condition = "")
         {
             DataTable dt = ToDataTable(exceladdress, sheetName, condition);
             if (dt == null) return null;
             return new SmartTable(dt);
         }
-        public static IEnumerable<SmartTable> ToMiMFaTables(string exceladdress, int startRecord = 0, int maxRecord = -1, string condition = "")
+        public static IEnumerable<SmartTable> ToSmartTables(string exceladdress, int startRecord = 0, int maxRecord = -1, string condition = "")
         {
             DataSet ds = ToDataSet(exceladdress, startRecord, maxRecord, condition);
             if (ds == null) yield break;
@@ -2078,7 +2087,7 @@ namespace MiMFa.Service
         #endregion
 
         #region XML
-        public static List<XMLElement> ToMiMFaXMLElements_Quick1(string xml)
+        public static List<XMLElement> ToXMLElements_Quick1(string xml)
         {
             List<KeyValuePair<int, XMLElement>> nested = new List<KeyValuePair<int, XMLElement>>();
             Stack<XMLElement> child = new Stack<XMLElement>();
@@ -2192,7 +2201,7 @@ namespace MiMFa.Service
             }
             return res;
         }
-        public static List<XMLElement> ToMiMFaXMLElements_Quick2(string xml)
+        public static List<XMLElement> ToXMLElements_Quick2(string xml)
         {
             List<KeyValuePair<int, XMLElement>> nested = new List<KeyValuePair<int, XMLElement>>();
             Stack<XMLElement> child = new Stack<XMLElement>();
@@ -2326,7 +2335,7 @@ namespace MiMFa.Service
             }
             return result;
         }
-        public static List<XMLElement> ToMiMFaXMLElements(string xml)
+        public static List<XMLElement> ToXMLElements(string xml)
         {
             Stack<KeyValuePair<bool, XMLElement>> resultStack = new Stack<KeyValuePair<bool, XMLElement>>();
             string startTag = "", endTag = "";
