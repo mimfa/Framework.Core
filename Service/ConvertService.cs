@@ -529,8 +529,94 @@ namespace MiMFa.Service
 
         #region *string*
         private static CharBank CharBank = null;
+        public static Point ToPoint(string val, Point defaultVal = default)
+        {
+            if (val == null) return defaultVal;
+            var matchs = Regex.Matches(val,"\\b\\d+\\b");
+            return matchs.Count > 1 ? new Point(Convert.ToInt32(matchs[0].Value), Convert.ToInt32(matchs[1].Value)) : defaultVal;
+        }
+        public static string ToString(Point Obj)
+        {
+            return $"{Obj.GetType().FullName}({Obj.X},{Obj.Y})";
+        }
+        public static Location ToLocation(string val, Location defaultVal = default)
+        {
+            if (val == null) return defaultVal;
+            var matchs = Regex.Matches(val, "\\b\\d+\\b");
+            return matchs.Count > 1 ? new Location(Convert.ToInt32(matchs[0].Value), Convert.ToInt32(matchs[1].Value)) : defaultVal;
+        }
+        public static string ToString(Location Obj)
+        {
+            return $"{Obj.GetType().FullName}({Obj.X},{Obj.Y})";
+        }
+        public static Size ToSize(string val, Size defaultVal = default)
+        {
+            if (val == null) return defaultVal;
+            var matchs = Regex.Matches(val, "\\b\\d+\\b");
+            return matchs.Count > 1 ? new Size(Convert.ToInt32(matchs[0].Value), Convert.ToInt32(matchs[1].Value)) : defaultVal;
+        }
+        public static string ToString(Size Obj)
+        {
+            return $"{Obj.GetType().FullName}({Obj.Width},{Obj.Height})";
+        }
+        public static Rectangle ToRectangle(string val, Rectangle defaultVal = default)
+        {
+            if (val == null) return defaultVal;
+            var matchs = Regex.Matches(val, "\\b\\d+\\b");
+            return matchs.Count > 3 ? new Rectangle(Convert.ToInt32(matchs[0].Value), Convert.ToInt32(matchs[1].Value), Convert.ToInt32(matchs[2].Value), Convert.ToInt32(matchs[3].Value)) : defaultVal;
+        }
+        public static string ToString(Rectangle Obj)
+        {
+            return $"{Obj.GetType().FullName}({Obj.X},{Obj.Y},{Obj.Width},{Obj.Height})";
+        }
+        public static object ToObject(string val, object defaultVal = default)
+        {
+            if (val == null) return defaultVal;
+            var match = Regex.Match(val, "^(\\w+\\.?)+\\b");
+            if (!match.Success)
+            {
+                match = Regex.Match(val, "^[+-]?\\d*\\.?\\d+$");
+                if (!match.Success) return val;
+                if (match.Value.Contains("."))
+                    if (match.Value.Length > 20)
+                        return ToDecimal(val);
+                    else if (match.Value.Length > 10)
+                        return ToDouble(val);
+                    else
+                        return ToSingle(val);
+                else if (match.Value.Length > 25)
+                    return ToDecimal(val);
+                else if (match.Value.Length > 10)
+                    return ToLong(val);
+                else
+                    return ToInt(val);
+            }
+            var key = match.Value.ToLower().Trim();
+            switch (key)
+            {
+                case "point":
+                case "system.drawing.point":
+                    return ToPoint(val);
+                case "size":
+                case "system.drawing.size":
+                    return ToSize(val);
+                case "rectangle":
+                case "system.drawing.rectangle":
+                    return ToRectangle(val);
+                case "location":
+                case "mimfa.model.location":
+                    return ToLocation(val);
+            }
+            return val;
+        }
         public static string ToString(object Obj)
         {
+            if (Obj == null) return string.Empty;
+            var t = Obj.GetType();
+            if (Obj is Point) return ToString((Point)Obj);
+            if (Obj is Size) return ToString((Size)Obj);
+            if (Obj is Location) return ToString((Location)Obj);
+            if (Obj is Rectangle) return ToString((Rectangle)Obj);
             return Obj + "";
         }
         public static string ToString(System.Windows.Forms.HtmlDocument Obj)
@@ -1173,8 +1259,7 @@ namespace MiMFa.Service
         }
         public static double ToDouble(object obj)
         {
-            if (obj == null) return 0;
-            return Convert.ToDouble(obj);
+            return obj == null?0:Convert.ToDouble(obj);
         }
         public static double ForceToDouble(object obj)
         {
@@ -1194,6 +1279,14 @@ namespace MiMFa.Service
             string[] stra = str.Split(fs.First());
             return Convert.ToDouble(stra.First() + fs + string.Join("", stra.Skip(1)));
         }
+        public static float ToSingle(object obj)
+        {
+            return obj == null ? 0 : Convert.ToSingle(obj);
+        }
+        public static int ToInt(object obj)
+        {
+            return obj == null ? 0 : Convert.ToInt32(obj);
+        }
         public static int TryToInt(object obj,int defaultVal = 0)
         {
             if (obj == null) return defaultVal;
@@ -1203,6 +1296,10 @@ namespace MiMFa.Service
         {
             if (obj == null) return defaultVal;
             try { return Convert.ToUInt32(obj); } catch { return defaultVal; }
+        }
+        public static long ToLong(object obj)
+        {
+            return obj == null ? 0 : Convert.ToInt64(obj);
         }
         public static long TryToLong(object obj, long defaultVal = 0)
         {
@@ -1214,7 +1311,7 @@ namespace MiMFa.Service
             if (obj == null) return defaultVal;
             try { return Convert.ToUInt64(obj); } catch { return defaultVal; }
         }
-        public static float TryToFloat(object obj, float defaultVal = 0)
+        public static float TryToSingle(object obj, float defaultVal = 0)
         {
             if (obj == null) return defaultVal;
             try { return Convert.ToSingle(obj); } catch { return defaultVal; }
@@ -1223,6 +1320,11 @@ namespace MiMFa.Service
         {
             if (obj == null) return defaultVal;
             try { return Convert.ToDouble(obj); } catch { return defaultVal; }
+        }
+        public static decimal ToDecimal(object obj)
+        {
+            if (obj == null) return 0;
+            return Convert.ToDecimal(obj);
         }
         public static decimal ForceToDecimal(string str)
         {

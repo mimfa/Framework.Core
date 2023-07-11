@@ -26,17 +26,12 @@ namespace MiMFa.General
         /// <param name="state"> 0: Minimize, 1: Normal, 2: Normal Maximize, 3: Maximize</param>
         public static void WindowsState(Form mainForm,int state)//windows state
         {
-            if (FirstSize == new Size(0, 0))
-                if (mainForm.Size == Screen.PrimaryScreen.Bounds.Size)
-                {
-                    FirstSize = new Size(800,600);
-                    FirstLocation = mainForm.Location;
-                }
-                else
-                {
-                    FirstSize = mainForm.Size;
-                    FirstLocation = mainForm.Location;
-                }
+            var rec = Screen.FromPoint(new Point(mainForm.Location.X+ mainForm.Width/2, mainForm.Location.Y+ mainForm.Height/2)).WorkingArea;
+            if (FirstSize == new Size(0, 0) || MathService.IsBetween(mainForm.Height,100, rec.Height) || MathService.IsBetween(mainForm.Width, 100, rec.Width))
+            {
+                FirstSize = mainForm.Size;
+                FirstLocation = mainForm.Location;
+            }
             switch (state)
             {
                 case 0:
@@ -48,20 +43,21 @@ namespace MiMFa.General
                     mainForm.Size = FirstSize;
                     break;
                 case 3:
+                    rec = Screen.FromPoint(new Point(mainForm.Location.X+ mainForm.Width/2, mainForm.Location.Y+ mainForm.Height/2)).Bounds;
                     mainForm.WindowState = FormWindowState.Normal;
-                    mainForm.Location = new Point(0, 0);
-                    mainForm.Size = Screen.PrimaryScreen.Bounds.Size;
+                    mainForm.Location = rec.Location;
+                    mainForm.Size = rec.Size;
                     break;
                 default:
                     mainForm.WindowState = FormWindowState.Normal;
-                    mainForm.Location = new Point(0, 0);
-                    mainForm.Size = new Size(Screen.PrimaryScreen.Bounds.Width, Convert.ToInt32(Screen.PrimaryScreen.Bounds.Height*0.95));
+                    mainForm.Location = rec.Location;
+                    mainForm.Size = rec.Size;
                     break;
             }
         }
         public static void WindowsState(Form mainForm)//windows state
         {
-            if (mainForm.Size == Screen.PrimaryScreen.Bounds.Size)
+            if (mainForm.Size == Screen.FromPoint(new Point(mainForm.Location.X+ mainForm.Width/2, mainForm.Location.Y+ mainForm.Height/2)).Bounds.Size)
                 WindowsState(mainForm,1);
             else if (mainForm.Size.Width <= FirstSize.Width && mainForm.Size.Height <= FirstSize.Height)
                 WindowsState(mainForm, 2);

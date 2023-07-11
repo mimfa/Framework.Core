@@ -208,6 +208,30 @@ namespace MiMFa.Service
             return Math.Abs((val - baseval) / baseval) <= Math.Abs(tolerancePercent);
         }
 
+        public static bool IsBetween(short value, short min, short max)
+        {
+            return value > min && value < max;
+        }
+        public static bool IsBetween(int value, int min, int max)
+        {
+            return value > min && value < max;
+        }
+        public static bool IsBetween(long value, long min, long max)
+        {
+            return value > min && value < max;
+        }
+        public static bool IsBetween(float value, float min, float max)
+        {
+            return value > min && value < max;
+        }
+        public static bool IsBetween(double value, double min, double max)
+        {
+            return value > min && value < max;
+        }
+        public static bool IsBetween(decimal value, decimal min, decimal max)
+        {
+            return value > min && value < max;
+        }
 
         public static double[][] Frequencies(params double[] arguments) => Frequencies(arguments.AsEnumerable());
         public static double[][] Frequencies(IEnumerable<double> arguments)
