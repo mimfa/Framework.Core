@@ -1115,6 +1115,14 @@ namespace MiMFa.Service
                     return new string[] { intoText.Substring(0, i), strsub.Substring(splitor.Length) };
             return new string[] { intoText };
         }
+        public static string[] SplitToArguments(string arg, string splitter = ";")
+        {
+            return Regex.Split(arg, $"^|(?<=[^\\\\]){splitter}");
+        }
+        public static string JoinToArgument(string[] args, string splitter = ";")
+        {
+            return string.Join(splitter, from arg in args select arg.Replace(splitter, $"\\{splitter}"));
+        }
 
         public static string FirstReplace(string intoText, string oldWords, string newWord, int fromIndex = 0)
         {

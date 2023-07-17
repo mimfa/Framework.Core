@@ -2476,6 +2476,11 @@
             <summary>Gets or sets the automatic decompression.</summary>
             <value>The automatic decompression.</value>
         </member>
+        <member name="P:HtmlAgilityPack.HtmlWeb.Timeout">
+            <summary>
+            Gets or sets the timeout value in milliseconds. Must be greater than zero. A value of -1 sets the timeout to be infinite.
+            </summary>
+        </member>
         <member name="P:HtmlAgilityPack.HtmlWeb.AutoDetectEncoding">
             <summary>
             Gets or Sets a value indicating if document encoding must be automatically detected.

@@ -830,14 +830,14 @@ namespace MiMFa.Model
         }
         public static XMLElement GetFirstChildElementByTagName(XMLElement element, string tagName)
         {
-            tagName = tagName.Trim().ToUpper();
+            tagName = tagName.Trim().ToLower();
             for (int i = 0; i < element.Children.Count; i++)
                 if (element.Children[i].TagName == tagName) return element.Children[i];
             return null;
         }
         public static List<XMLElement> GetChildElementsByTagName(XMLElement element, string tagName)
         {
-            tagName = tagName.Trim().ToUpper();
+            tagName = tagName.Trim().ToLower();
             List<XMLElement> ls = new List<XMLElement>();
             for (int i = 0; i < element.Children.Count; i++)
                 if (element.Children[i].TagName == tagName) ls.Add(element.Children[i]);
@@ -869,7 +869,7 @@ namespace MiMFa.Model
         }
         public static XMLElement GetFirstElementByTagName(List<XMLElement> elements, string tagName)
         {
-            tagName = tagName.ToUpper();
+            tagName = tagName.ToLower();
             XMLElement he = null;
             for (int i = 0; i < elements.Count; i++)
                 if (elements[i].TagName == tagName) return elements[i];
@@ -880,7 +880,7 @@ namespace MiMFa.Model
         public static List<XMLElement> GetElementsByTagName(List<XMLElement> elements, string tagName)
         {
             List<XMLElement> ls = new List<XMLElement>();
-            tagName = tagName.ToUpper();
+            tagName = tagName.ToLower();
             List<XMLElement> hes;
             for (int i = 0; i < elements.Count; i++)
                 if (elements[i].TagName == tagName) ls.Add(elements[i]);
@@ -899,7 +899,7 @@ namespace MiMFa.Model
         }
         public static bool RemoveFirstElementByTagName( List<XMLElement> elements, string tagName)
         {
-            tagName = tagName.ToUpper();
+            tagName = tagName.ToLower();
             for (int i = 0; i < elements.Count; i++)
                 if (elements[i].TagName == tagName) { elements.RemoveAt(i); return true; }
                 else if (RemoveFirstElementByTagName( elements[i].Children, tagName)) return true;

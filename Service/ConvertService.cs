@@ -2458,7 +2458,7 @@ namespace MiMFa.Service
                 if (startTag.StartsWith("<"))// if is tag
                 {
                     string[] tag = StringService.FirstSplit(startTag + " ", " ", 1);
-                    string tagname = tag.First().Replace("<", "").Replace("/>", "").Replace(">", "").ToUpper();
+                    string tagname = tag.First().Replace("<", "").Replace("/>", "").Replace(">", "").ToLower();
                     resultStack.Push(new KeyValuePair<bool, XMLElement>(
                         !startTag.EndsWith("/>"),
                         new XMLElement(resultStack.Count, tagname, startTag, null, null)));
@@ -2474,7 +2474,7 @@ namespace MiMFa.Service
             };
             Func<bool> EndTag = () =>
             {
-                string tagname = endTag.Replace("</", "").Replace("<", "").Replace(">", "").Trim().ToUpper();
+                string tagname = endTag.Replace("</", "").Replace("<", "").Replace(">", "").Trim().ToLower();
                 if (string.IsNullOrEmpty(tagname)) return false;
                 bool find = false;
                 foreach (var item in resultStack)
