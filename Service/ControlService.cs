@@ -788,7 +788,32 @@ namespace MiMFa.Service
 
 #endregion
 
-#region DataGridView
+#region Menu
+        public static void AddDropDownMenuItems(ref ToolStripDropDownItem toolStrip, IEnumerable<string>items, bool onClickCheck, Func<ToolStripMenuItem, string, string> getText, Action<ToolStripMenuItem, string> mainAction)
+        {
+            foreach (var item in items)
+            {
+                var tsmi = new ToolStripMenuItem();
+                tsmi.Tag = item;
+                tsmi.CheckOnClick = onClickCheck;
+                tsmi.Text = getText(tsmi, item);
+                if(onClickCheck) tsmi.CheckedChanged += (o, e) => mainAction(((ToolStripMenuItem)o), ((ToolStripMenuItem)o).Tag + "");
+                else tsmi.Click += (o, e) => mainAction(((ToolStripMenuItem)o), ((ToolStripMenuItem)o).Tag + "");
+                toolStrip.DropDownItems.Add(tsmi);
+            }
+        }
+        public static void AddDropDownMenuItems(ref ToolStripDropDownItem toolStrip, IEnumerable<string> paths, Action<ToolStripMenuItem, string> mainAction, bool onClickCheck = true)
+        {
+            AddDropDownMenuItems(ref toolStrip,
+                paths,
+                onClickCheck,
+                (tsmi,item)=>Path.GetFileNameWithoutExtension(item),
+                mainAction
+                );
+        }
+        #endregion
+
+        #region DataGridView
         public static void DataGridViewToProfessional(DataGridView dgv, bool createEvent = true, bool resetCMS = false, TextBox searchBox = null, ComboBox columnNamesBox = null, bool collapsedColumns = true, bool onlyVisibled = false, bool selectionItems = true, bool editItems = false, bool exportItems = true, bool rowsNumber = false)
         {
             if(createEvent) dgv.CellMouseDown += DataGridViewSelectWithMouseDown;

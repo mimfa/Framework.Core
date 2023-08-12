@@ -609,6 +609,11 @@ namespace MiMFa.Service
             }
             return val;
         }
+        public static string ToString(Font font)
+        {
+            if (font == null) return null;
+            return $@"{font.Style} normal {(font.Bold ? "bold" : "normal")} {font.Size}{ToUniversalUnit(font.Unit)} '{font.FontFamily}'";
+        }
         public static string ToString(object Obj)
         {
             if (Obj == null) return string.Empty;
@@ -1515,6 +1520,28 @@ namespace MiMFa.Service
             }
             return string.Join("", Math.Round(value, decimals), startDelimited, universalUnits[ui],endDelimited);
         }
+        public static object ToUniversalUnit(GraphicsUnit unit)
+        {
+            switch (unit)
+            {
+                case GraphicsUnit.World:
+                    return "ex";
+                case GraphicsUnit.Display:
+                    return "px";
+                case GraphicsUnit.Point:
+                    return "pt";
+                case GraphicsUnit.Inch:
+                    return "in";
+                case GraphicsUnit.Document:
+                    return "rem";
+                case GraphicsUnit.Millimeter:
+                    return "mm";
+                case GraphicsUnit.Pixel:
+                default:
+                    return "px";
+            }
+        }
+
         public static object[] ToArray(object obj)
         {
             if (obj == null) return null;

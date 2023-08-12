@@ -236,7 +236,7 @@ namespace MiMFa.Service
             using (ThreadDialog wd = new ThreadDialog(true, true))
             {
                 if (finish != null) wd.Finished += finish;
-                wd.ShowDialog(message, work);
+                wd.ShowDialog(message, work,3);
                 return wd;
             }
         }
@@ -244,7 +244,7 @@ namespace MiMFa.Service
         {
             ThreadDialog wd = new ThreadDialog(true, true);
             if (finish != null) wd.Finished += finish;
-            wd.Show(message, work);
+            wd.Show(message, work,3);
             return wd;
         }
         public static Thread RunThread(ThreadStart action, bool background = true)

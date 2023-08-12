@@ -59,7 +59,7 @@ namespace MiMFa
                 Templator.Update(control, nest, toolstrip, exceptControls);
                 return true;
             }
-                return false;
+            return false;
         }
         public static string Translate(string text)
         {
@@ -80,6 +80,5 @@ namespace MiMFa
             if (HasTranslator) return Translator.Get(texts);
             return string.Join("", texts);
         }
-
     }
 }

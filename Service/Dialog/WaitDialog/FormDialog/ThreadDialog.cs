@@ -232,7 +232,7 @@ namespace MiMFa.Service.Dialog.WaitDialog.FormDialog
         {
             bool b = false;
             if (WorkThread != null && WorkThread.IsAlive) try { WorkThread.Abort(); b = true/*!WorkThread.IsAlive*/; } catch { }
-            if (WorkTask != null && !WorkTask.IsCompleted) try { WorkTask.Wait(); WorkTask.Dispose(); b = true/*(WorkTask.IsCanceled || WorkTask.IsFaulted || WorkTask.IsCompleted)*/; } catch { }
+            if (WorkTask != null && !WorkTask.IsCompleted) try { /*WorkTask.Wait();*/ WorkTask.Dispose(); b = true/*(WorkTask.IsCanceled || WorkTask.IsFaulted || WorkTask.IsCompleted)*/; } catch { }
             if (WorkBackground != null && WorkBackground.IsBusy) try { WorkBackground.CancelAsync(); WorkBackground.Dispose(); b = true/*!WorkBackgroundWorker.IsBusy*/; } catch { }
             ProcessService.ReduceMemory(false);
             return b;

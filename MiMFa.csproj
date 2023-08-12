@@ -113,6 +113,7 @@
       <DependentUpon>VerticalScrollBar.cs</DependentUpon>
     </Compile>
     <Compile Include="Engine\Search.cs" />
+    <Compile Include="Engine\Template\CustomPalette.cs" />
     <Compile Include="Engine\Template\ITemplateApplier.cs" />
     <Compile Include="Engine\Template\ITemplateIgnorer.cs" />
     <Compile Include="Engine\Template\PaletteBase.cs" />

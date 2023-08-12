@@ -202,10 +202,10 @@ namespace MiMFa.Service
             var arr = message.Split(':');
             switch (message.Split(':')[0].ToUpper().Trim())
             {
-                case "SUCC": case "SUCCESS": return ShowMessage(MessageMode.Success, translate, string.Join(":",arr.Skip(1)).TrimStart());
-                case "MSG": case "MESSAGE": return ShowMessage(MessageMode.Message, translate, string.Join(":", arr.Skip(1)).TrimStart());
-                case "ASK": case "QUESTION": return ShowMessage(MessageMode.Question, translate, string.Join(":", arr.Skip(1)).TrimStart());
-                case "ALERT": case "WARNING": return ShowMessage(MessageMode.Warning, translate, string.Join(":", arr.Skip(1)).TrimStart());
+                case "SCS": case "SUC": case "SUCC": case "SUCCESS": return ShowMessage(MessageMode.Success, translate, string.Join(":",arr.Skip(1)).TrimStart());
+                case "MES": case "MSG": case "MESSAGE": return ShowMessage(MessageMode.Message, translate, string.Join(":", arr.Skip(1)).TrimStart());
+                case "ASK": case "QUE": case "QUS": case "QUESTION": return ShowMessage(MessageMode.Question, translate, string.Join(":", arr.Skip(1)).TrimStart());
+                case "ALERT": case "WAR": case "WARN": case "WARNING": return ShowMessage(MessageMode.Warning, translate, string.Join(":", arr.Skip(1)).TrimStart());
                 case "ERR": case "ERROR": return ShowMessage(MessageMode.Error, translate, string.Join(":", arr.Skip(1)).TrimStart());
                 default: return ShowMessage("", MessageMode.Null, translate, message);
             }
