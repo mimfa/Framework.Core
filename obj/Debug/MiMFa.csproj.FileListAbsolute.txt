@@ -55,4 +55,4 @@ D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.cspro
 D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.csproj.CopyComplete
 D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa Framework.dll
 D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa Framework.pdb
-D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.csprojAssemblyReference.cache
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.csproj.AssemblyReference.cache
