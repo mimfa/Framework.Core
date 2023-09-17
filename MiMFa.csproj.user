@@ -1,6 +1,30 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ProjectView>ProjectFiles</ProjectView>
+    <ProjectView>ShowAllFiles</ProjectView>
+    <ShowAllFiles>true</ShowAllFiles>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Update="Controls\WinForm\ScrollBar\HorizontalScrollBar.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Controls\WinForm\ScrollBar\VerticalScrollBar.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Network\Web\WebClient.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="Service\Dialog\MessageDialog\FormDialog\CircleDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Service\Dialog\MessageDialog\FormDialog\ModernDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Service\Dialog\WaitDialog\FormDialog\ThreadDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Service\Dialog\WaitDialog\FormDialog\WaitingDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+  </ItemGroup>
 </Project>

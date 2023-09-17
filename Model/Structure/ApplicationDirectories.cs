@@ -57,13 +57,13 @@ namespace MiMFa.Exclusive.Collection.Instance
         public ApplicationDirectories() : base()
         {
             DefaultValues();
-            CreateAllPath();
+            CreateAllDirectories();
         }
-        public override void DefaultValues()
+        public new void DefaultValues()
         {
             string sep = System.IO.Path.DirectorySeparatorChar.ToString();
             ThisDirectory = ApplicationDirectory;
-            base.DefaultValues();
+            Config.DefaultValues();
             ThisDirectory = ApplicationDirectory;
             ConfigurationDirectory = ThisDirectory + @"Configuration"+sep;
             TempDirectory = ThisDirectory + @"Temp"+sep;
@@ -101,9 +101,9 @@ namespace MiMFa.Exclusive.Collection.Instance
         }
 
 
-        public virtual  string[] GetOpenFileLogs() => MiMFa.Service.IOService.FileToStringArray(LogRecoveryFileAddress);
-        public virtual  void SetOpenFileLogs(string[] files) => MiMFa.Service.IOService.StringArrayToFile(LogRecoveryFileAddress, files);
-        public  virtual void AppendOpenFileLogs(string file) => MiMFa.Service.IOService.StringNewLineAppendFile(LogRecoveryFileAddress, file);
+        public virtual  string[] GetOpenFileLogs() => MiMFa.Service.IOService.ReadLines(LogRecoveryFileAddress).ToArray();
+        public virtual  void SetOpenFileLogs(string[] files) => MiMFa.Service.IOService.WriteLines(LogRecoveryFileAddress, files);
+        public  virtual void AppendOpenFileLogs(string file) => MiMFa.Service.IOService.AppendText(LogRecoveryFileAddress, file);
 
         public virtual Dictionary<string, string> GetDicOfRecoveryData()
         {
@@ -115,7 +115,7 @@ namespace MiMFa.Exclusive.Collection.Instance
                 {
                     var fi = new System.IO.FileInfo(files[i]);
                     if (!PathService.IsUsingByProccess(files[i]))
-                        dic.Add(files[i], (dic.Count + 1) + "- " + Exclusive.Language.Reader.GetText("Date") + " " + ConvertService.ToMiMFaDate(fi.LastAccessTime).GetDate() + " " + Exclusive.Language.Reader.GetText("On Clock") + " " + ConvertService.ToMiMFaTime(fi.LastAccessTime).GetTime() + " ---> (" + fi.Length + " byte)");
+                        dic.Add(files[i], (dic.Count + 1) + "- " + Exclusive.Language.Reader.GetText("Date") + " " + ConvertService.ToSmartDate(fi.LastAccessTime).GetDate() + " " + Exclusive.Language.Reader.GetText("On Clock") + " " + ConvertService.ToSmartTime(fi.LastAccessTime).GetTime() + " ---> (" + fi.Length + " byte)");
                 }
             }
             return dic;

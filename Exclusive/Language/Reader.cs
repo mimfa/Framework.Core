@@ -31,7 +31,7 @@ namespace MiMFa.Exclusive.Language
         public static PropertyToContentInjection PTCI = new PropertyToContentInjection('¶', Application.CompanyName);
         public static MessageMode MessageType = MessageMode.Message;
         public static RightToLeft RTL = RightToLeft.No;
-        public static Image Flag = Properties.Resources.Flag_Iran;
+        public static Image Flag = null;
         public static string Name = "English";
         public static bool IsRun = false;
         public static bool WithNormalization = true;
