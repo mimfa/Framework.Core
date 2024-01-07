@@ -536,7 +536,7 @@ namespace MiMFa.Service
         #endregion
 
         #region RichTextBox
-        public static RichTextBox RichTextBoxAppendWithStyle(ref RichTextBox rtb, string text, Color foreColor, HorizontalAlignment ha)
+        public static RichTextBox RichTextBoxAppendWithStyle(ref RichTextBox rtb, string text, Color foreColor, HorizontalAlignment ha, bool scrollTo = true)
         {
             bool sc = !rtb.Focused || rtb.GetPositionFromCharIndex(rtb.GetFirstCharIndexOfCurrentLine()).Y >= rtb.PreferredSize.Height- rtb.Height-100;
             var st = rtb.TextLength;
@@ -547,28 +547,34 @@ namespace MiMFa.Service
             rtb.SelectionLength = text.Length;
             rtb.SelectionAlignment = ha;
             rtb.SelectionStart = rtb.TextLength;
-            if (sc) try { rtb.ScrollToCaret(); } catch { }
+            if (sc && scrollTo) try { rtb.ScrollToCaret(); } catch { }
             return rtb;
         }
-        public static RichTextBox RichTextBoxAppendWithStyle(ref RichTextBox rtb, string text, Color foreColor)
+        public static RichTextBox RichTextBoxAppendWithStyle(ref RichTextBox rtb, string text, Color foreColor, bool scrollTo = true)
         {
             bool sc = !rtb.Focused || rtb.AutoScrollOffset.Y >= rtb.PreferredSize.Height - rtb.Height - 100;
             rtb.SelectionStart = rtb.TextLength + 1;
             rtb.SelectionLength = text.Length;
             rtb.SelectionColor = foreColor;
             rtb.SelectedText = text;
-            if (sc) rtb.ScrollToCaret();
+            if (sc && scrollTo) rtb.ScrollToCaret();
             return rtb;
         }
-        public static RichTextBox RichTextBoxChangeWordColor(ref RichTextBox rtb, string startWord, string endWord, Color foreColor)
+        public static RichTextBox RichTextBoxChangeWordColor(ref RichTextBox rtb, string startWord, string endWord, Color foreColor, bool scrollTo = false)
         {
-            return RichTextBoxChangePositionColor(ref rtb,foreColor, StringService.WordsIndecesBetween(rtb.Text, startWord, endWord, true).ToArray());
+            return RichTextBoxChangePositionColor(ref rtb,foreColor, scrollTo, StringService.WordsIndecesBetween(rtb.Text, startWord, endWord, true).ToArray());
         }
-        public static RichTextBox RichTextBoxChangeWordColor(ref RichTextBox rtb, string word, Color foreColor)
+        public static RichTextBox RichTextBoxChangeWordColor(ref RichTextBox rtb, string word, Color foreColor, bool scrollTo = false)
         {
-            return RichTextBoxChangeWordColor(ref rtb,word,"",foreColor);
+            return RichTextBoxChangeWordColor(ref rtb,word,"",foreColor, scrollTo);
         }
-        public static RichTextBox RichTextBoxAppendWithStyle(ref RichTextBox rtb, string text, Color foreColor, Color backColor, HorizontalAlignment ha)
+        public static RichTextBox RichTextBoxChangeWordColor(ref RichTextBox rtb, string pattern, RegexOptions options, Color foreColor, Color backColor, bool scrollTo = false)
+        {
+            foreach (Match item in Regex.Matches(rtb.Text, pattern, options,new TimeSpan(1000000)))
+                RichTextBoxChangeWordColor(ref rtb, item.Value, "",foreColor, backColor, scrollTo);
+            return rtb;
+        }
+        public static RichTextBox RichTextBoxAppendWithStyle(ref RichTextBox rtb, string text, Color foreColor, Color backColor, HorizontalAlignment ha, bool scrollTo = true)
         {
             bool sc = !rtb.Focused || rtb.AutoScrollOffset.Y >= rtb.PreferredSize.Height - rtb.Height - 100;
             var st = rtb.TextLength;
@@ -581,10 +587,10 @@ namespace MiMFa.Service
             rtb.SelectionLength = text.Length;
             rtb.SelectionAlignment = ha;
             rtb.SelectionStart = rtb.TextLength;
-            if(sc) rtb.ScrollToCaret();
+            if(sc && scrollTo) rtb.ScrollToCaret();
             return rtb;
         }
-        public static RichTextBox RichTextBoxAppendWithStyle(ref RichTextBox rtb, string text, Color foreColor, Color backColor)
+        public static RichTextBox RichTextBoxAppendWithStyle(ref RichTextBox rtb, string text, Color foreColor, Color backColor, bool scrollTo = true)
         {
             int st = rtb.TextLength;
             rtb.SelectionStart = st+1;
@@ -592,18 +598,22 @@ namespace MiMFa.Service
             rtb.SelectionColor = foreColor;
             rtb.SelectionBackColor = backColor;
             rtb.SelectedText = text;
-            rtb.ScrollToCaret();
+            if(scrollTo)rtb.ScrollToCaret();
             return rtb;
         }
-        public static RichTextBox RichTextBoxChangeWordColor(ref RichTextBox rtb, string startWord, string endWord, Color foreColor, Color backColor)
+        public static RichTextBox RichTextBoxChangeWordColor(ref RichTextBox rtb, string startWord, string endWord, Color foreColor, Color backColor, bool scrollTo = false)
         {
-            return RichTextBoxChangePositionColor(ref rtb,foreColor,backColor, StringService.WordsIndecesBetween(rtb.Text, startWord, endWord, true).ToArray());
+            return RichTextBoxChangePositionColor(ref rtb,foreColor,backColor, scrollTo, StringService.WordsIndecesBetween(rtb.Text, startWord, endWord, true).ToArray());
         }
-        public static RichTextBox RichTextBoxChangeWordColor(ref RichTextBox rtb, string word, Color foreColor, Color backColor)
+        public static RichTextBox RichTextBoxChangeWordColor(ref RichTextBox rtb, string word, Color foreColor, Color backColor, bool scrollTo = false)
         {
-            return RichTextBoxChangeWordColor(ref rtb, word, "", foreColor, backColor);
+            return RichTextBoxChangeWordColor(ref rtb, word, "", foreColor, backColor, scrollTo);
         }
         public static RichTextBox RichTextBoxChangePositionColor(ref RichTextBox rtb, Color foreColor, params Point[] points)
+        {
+            return RichTextBoxChangePositionColor(ref rtb, foreColor, false, points);
+        }
+        public static RichTextBox RichTextBoxChangePositionColor(ref RichTextBox rtb, Color foreColor, bool scrollTo, params Point[] points)
         {
             rtb.SuspendLayout();
             Point scroll = rtb.AutoScrollOffset;
@@ -615,13 +625,21 @@ namespace MiMFa.Service
                 rtb.SelectionLength = item.Y - item.X;
                 rtb.SelectionColor = foreColor;
             }
-            rtb.SelectionStart = ss;
-            rtb.SelectionIndent = slct;
-            rtb.AutoScrollOffset = scroll;
+            if (!scrollTo)
+            {
+                rtb.SelectionStart = ss;
+                rtb.SelectionIndent = slct;
+                rtb.AutoScrollOffset = scroll;
+            }
+            else rtb.ScrollToCaret();
             rtb.ResumeLayout(true);
             return rtb;
         }
         public static RichTextBox RichTextBoxChangePositionColor(ref RichTextBox rtb, Color foreColor, Color backColor, params Point[] points)
+        {
+            return RichTextBoxChangePositionColor(ref rtb, foreColor, backColor, false, points);
+        }
+        public static RichTextBox RichTextBoxChangePositionColor(ref RichTextBox rtb, Color foreColor, Color backColor, bool scrollTo, params Point[] points)
         {
             rtb.SuspendLayout();
             Point scroll = rtb.AutoScrollOffset;
@@ -634,9 +652,13 @@ namespace MiMFa.Service
                 rtb.SelectionColor = foreColor;
                 rtb.SelectionBackColor = backColor;
             }
-            rtb.SelectionStart = ss;
-            rtb.SelectionIndent = slct;
-            rtb.AutoScrollOffset = scroll;
+            if (!scrollTo)
+            {
+                rtb.SelectionStart = ss;
+                rtb.SelectionIndent = slct;
+                rtb.AutoScrollOffset = scroll;
+            }
+            else rtb.ScrollToCaret();
             rtb.ResumeLayout(true);
             return rtb;
         }
