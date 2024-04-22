@@ -244,6 +244,7 @@ namespace MiMFa.Engine.Web
         public virtual PointerJS First()=> All().On("[0]");
         public virtual PointerJS Last()=> All().On(".slice(-1).pop()");
         public virtual PointerJS Reverse() => On(".reverse()");
+        public virtual PointerJS Slice(int index = 0, int? length = null) => On(".slice(" + index + (length == null ? ")" : $", {length})"));
 
         public PointerJS On(PointerJS nextPointer) => On(nextPointer.ToString());
         public virtual PointerJS On(string nextCode) => Format("{0}{1}", nextCode);
@@ -357,7 +358,19 @@ namespace MiMFa.Engine.Web
 
         public virtual PointerJS SendKeys(string keys) => Scroll().Follows(InvokeKeyboardEvent(keys, "keydown"));
         public virtual PointerJS SendText(string text) => Scroll().Follows(InvokeKeyboardEvent(ConvertService.ToHotKeys(text), "keydown"));
-        public virtual PointerJS Scroll() => On(".scrollIntoView({ behavior: 'smooth', block: 'end'})"); 
+        public virtual PointerJS Scroll() => On(".scrollIntoView({ behavior: 'smooth', block: 'end'})");
+        public virtual PointerJS ScrollTo(PointerJS pointer) => ScrollX(pointer).Follows(ScrollY(pointer));
+        public virtual PointerJS ScrollTo(string codeX, string codeY) => ScrollX(codeX).Follows(ScrollY(codeY));
+        public virtual PointerJS ScrollTo(int x, int y) => ScrollX(x).Follows(ScrollY(y));
+        public virtual PointerJS ScrollX(PointerJS pointer) => On(".scrollLeft").Set(pointer.Clone().PositionX());
+        public virtual PointerJS ScrollX(string code) => On(".scrollLeft").Set(code);
+        public virtual PointerJS ScrollX(int x) => On(".scrollLeft").Set(x);
+        public virtual PointerJS ScrollY(PointerJS pointer) => On(".scrollTop").Set(pointer.Clone().PositionY());
+        public virtual PointerJS ScrollY(string code) => On(".scrollTop").Set(code);
+        public virtual PointerJS ScrollY(int y) => On(".scrollTop").Set(y);
+        public virtual PointerJS Position() => PositionX().Join(PositionY()).Array();
+        public virtual PointerJS PositionX() => On(".offsetLeft");
+        public virtual PointerJS PositionY() => On(".offsetTop");
         public virtual PointerJS Flow() => On(".blur()");
         public virtual PointerJS Focus() => On(".focus()");
         public virtual PointerJS Submit() => Scroll().Follows(On(".submit()"));

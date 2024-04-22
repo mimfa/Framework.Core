@@ -29,6 +29,7 @@ namespace MiMFa.Service.Dialog.WaitDialog.FormDialog
         public bool TryCatchBlock = true;
         public bool ShowMessages = false;
         public bool SilentMode = false;
+        public DoWorkEventArgs TransferWorkArgs { get; set; }
 
 
         private static FormMove FM;
@@ -76,7 +77,7 @@ namespace MiMFa.Service.Dialog.WaitDialog.FormDialog
         {
             if (text != null) Text = TextLabel.Text = Translate(text);
             Start(action, threadMode);
-            if (!IsDisposed) try { Show(); } catch { }
+            if (CheckAlive()) try { Show(); } catch { }
         }
         /// <summary>
         /// Start Process in a safe Waiting Dialogs Thread
@@ -94,7 +95,7 @@ namespace MiMFa.Service.Dialog.WaitDialog.FormDialog
         {
             if (text != null) Text = TextLabel.Text = Translate(text);
             Start(action, threadMode);
-            if (!IsDisposed) try { return ShowDialog(); } catch { }
+            if (CheckAlive()) try { return ShowDialog(); } catch { }
             return DialogResult;
         }
 
@@ -146,14 +147,16 @@ namespace MiMFa.Service.Dialog.WaitDialog.FormDialog
                 {
                     try
                     {
-                        action(this, new DoWorkEventArgs(this));
+                        TransferWorkArgs = TransferWorkArgs??new DoWorkEventArgs(WorkThread);
+                        action(this, TransferWorkArgs);
                     }
                     catch (Exception ex) { if (ShowMessages) DialogService.ShowMessage(ex); }
                     OnFinish(null);
                 });
             else WorkThread = new Thread((a) =>
             {
-                action(this, null);
+                TransferWorkArgs = TransferWorkArgs ?? new DoWorkEventArgs(WorkThread);
+                action(this, TransferWorkArgs);
                 OnFinish(null);
             });
             WorkThread.IsBackground = background;
@@ -182,7 +185,8 @@ namespace MiMFa.Service.Dialog.WaitDialog.FormDialog
                 {
                     try
                     {
-                        action(this, new DoWorkEventArgs(this));
+                        TransferWorkArgs = TransferWorkArgs ?? new DoWorkEventArgs(WorkThread);
+                        action(this, TransferWorkArgs);
                     }
                     catch (Exception ex) { if (ShowMessages) DialogService.ShowMessage(ex); }
                     OnFinish(null);
@@ -190,7 +194,8 @@ namespace MiMFa.Service.Dialog.WaitDialog.FormDialog
             else
                 WorkTask = new Task(() =>
                 {
-                        action(this, new DoWorkEventArgs(this));
+                    TransferWorkArgs = TransferWorkArgs ?? new DoWorkEventArgs(WorkThread);
+                    action(this, TransferWorkArgs);
                     OnFinish(null);
                 });
             if (SilentMode) WorkTask.Start();
@@ -217,10 +222,18 @@ namespace MiMFa.Service.Dialog.WaitDialog.FormDialog
                 OnFinish(e);
             };
 
-            if (SilentMode) WorkBackground.RunWorkerAsync();
-            else Load += (s, e) => WorkBackground.RunWorkerAsync();
+            TransferWorkArgs = TransferWorkArgs ?? new DoWorkEventArgs(WorkThread);
+            if (SilentMode) WorkBackground.RunWorkerAsync(TransferWorkArgs);
+            else Load += (s, e) => WorkBackground.RunWorkerAsync(TransferWorkArgs);
         }
 
+        public virtual bool CheckAlive()
+        {
+            if (WorkThread != null) return WorkThread.IsAlive;
+            if (WorkTask != null) return !WorkTask.IsCompleted;
+            if (WorkBackground != null) return WorkBackground.IsBusy;
+            return !SilentMode && !IsDisposed;
+        }
         public virtual bool Cancel()
         {
             if (!SilentMode && !IsDisposed)

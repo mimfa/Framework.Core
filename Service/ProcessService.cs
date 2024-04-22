@@ -231,6 +231,15 @@ namespace MiMFa.Service
         {
             return RunThread(new ThreadStart(action), background);
         }
+        public static DoWorkEventArgs RunWork(string message, DoWorkEventHandler work, RunWorkerCompletedEventHandler finish = null)
+        {
+            using (ThreadDialog wd = new ThreadDialog(true, true))
+            {
+                if (finish != null) wd.Finished += finish;
+                wd.ShowDialog(message, work, 3);
+                return wd.TransferWorkArgs;
+            }
+        }
         public static Form RunDialog(string message, DoWorkEventHandler work, RunWorkerCompletedEventHandler finish = null)
         {
             using (ThreadDialog wd = new ThreadDialog(true, true))
