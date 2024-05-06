@@ -107,7 +107,7 @@ namespace MiMFa.Model.IO.Connector
 
         public ConnectorBase(string path, Encoding encoding = null)
         {
-            Path = path;
+            Path = string.IsNullOrWhiteSpace(path)? CreatePath() : path;
             Encoding = encoding ?? Encoding;
             UpdateDetectors();
         }
@@ -117,6 +117,7 @@ namespace MiMFa.Model.IO.Connector
             UpdateDetectors();
             return true;
         }
+        public virtual string CreatePath() => PathService.CreateValidPathName(Config.TemporaryDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), DateTime.Now.Ticks + "", ".tsv", false);
 
         public virtual string[][] ReadAllColumns() => (from v in ReadColumns() select v.ToArray()).ToArray();
         public virtual string[] ReadAllWarps() => ReadWarps().ToArray();
@@ -477,8 +478,5 @@ namespace MiMFa.Model.IO.Connector
         //}
         public virtual IEnumerable<string> SplitText(string text, params string[] splitors) => from v in StringService.Split(text, splitors, QuoteChars, MetaChar) select UnescapeChars(v);
         #endregion
-
-
-
     }
 }

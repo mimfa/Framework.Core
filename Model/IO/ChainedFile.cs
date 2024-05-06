@@ -1102,9 +1102,8 @@ namespace MiMFa.Model.IO
 
 
         #region CONSTRUCTORS
-
         [Obsolete("This constractor is obsoleted! Please Use another constractors!", false)]
-        public ChainedFile() : this(PathService.CreateValidPathName(Config.TemporaryDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), DateTime.Now.Ticks + "", ".tsv", false), true)
+        public ChainedFile() : this(default(string), true)
         {
         }
         public ChainedFile(string[] paths, string newPath)
@@ -1548,9 +1547,9 @@ namespace MiMFa.Model.IO
                     string oldpath = Path;
                     Sleep();
                     New();
-                    if (System.IO.Path.GetExtension(path).ToLower() == MetaDataExtension)
+                    if (!string.IsNullOrWhiteSpace(path) && System.IO.Path.GetExtension(path).ToLower() == MetaDataExtension)
                         path = path.Substring(0, path.Length - MetaDataExtension.Length);
-                    RelativePath = string.IsNullOrWhiteSpace(path) ? "" : System.IO.Path.GetFullPath(path);
+                    RelativePath = string.IsNullOrWhiteSpace(path) ? "" : InfoService.IsAddress(path,false)? System.IO.Path.GetFullPath(path): path;
                     Connector = CreateConnector(RelativePath, Encoding);
                     if (createIfNotExist) Create();
                     OpenMetaData();

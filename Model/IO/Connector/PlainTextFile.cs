@@ -11,14 +11,15 @@ namespace MiMFa.Model.IO.Connector
 {
     public class PlainTextFile : ConnectorBase
     {
-        public PlainTextFile(string path, Encoding encoding = null) : base(path, encoding)
+        public PlainTextFile(string path, Encoding encoding = null) : base(InfoService.IsAddress(path, false)? path:null, encoding)
         {
+            if (!string.IsNullOrEmpty(path) && path != Path) WriteText(path);
         }
 
         public override bool CreateNew()
         {
             PathService.CreateAllDirectories(System.IO.Path.GetDirectoryName(Path));
-            WriteText("");
+            if(!File.Exists(Path)) WriteText("");
             return base.CreateNew();
         }
         public override IEnumerable<string> ReadLines()
