@@ -30,9 +30,13 @@ namespace MiMFa.Model.IO.Connector
             var lb = MetaLineBreakChar;
             foreach (var line in IOService.ReadLines(Path, Encoding))
                 if (lastLine.Count == 0)
-                    if (sre.Matches(line).Count > ere.Matches(line).Count)
+                {
+                    var e = ere.Matches(line).Count;
+                    var nl = ere.Replace(line,"");
+                    if (sre.Matches(nl).Count > e)
                         lastLine.Add(line);
                     else yield return line;
+                }
                 else if (ere.Matches(line).Count > sre.Matches(line).Count)
                 {
                     lastLine.Add(line);
