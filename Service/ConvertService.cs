@@ -1344,11 +1344,78 @@ namespace MiMFa.Service
         #endregion
 
         #region datatable
-        public static DataTable ToTable(string textfilePath, string columnsDelimited="\t", string rowsDelimited="\r\n",int maxrow = 999999999)
+        public static List<List<string>> ToCells(string text, char columnsDelimiter = '\t', char rowsDelimiter = '\n', char enclosure = '"')
+        {
+            if (string.IsNullOrEmpty(text)) return new List<List<string>>();
+            var rows = new List<List<string>>();
+            var length = text.Length;
+            var index = 0;
+            while (index < length) {
+                var row = new List<string>();
+                var column = "";
+                var inEnclosure = false;
+                do {
+                    var mchar = text[index++];
+                    if (inEnclosure) {
+                        if (mchar == enclosure) {
+                            if (index < length) {
+                                mchar = text[index];
+                                if (mchar == enclosure) {
+                                    column += mchar;
+                                    index++;
+                                } else inEnclosure = false;
+                            } else
+                            {
+                                row.Add(column);
+                                break;
+                            }
+                        } else column += mchar;
+                    } else if(mchar == enclosure) {
+                        if (index < length) {
+                            mchar = text[index++];
+                            if (mchar == enclosure) column += mchar;
+                            else
+                            {
+                                inEnclosure = true;
+                                column += mchar;
+                            }
+                        } else
+                        {
+                            row.Add(column);
+                            break;
+                        }
+                    }
+                    else if(mchar == columnsDelimiter) {
+                        row.Add(column);
+                        column = "";
+                    }
+                    else if(mchar == '\r') {
+                        if (index < length) {
+                            mchar = text[index];
+                            if (mchar == rowsDelimiter) index++;
+                        }
+                        row.Add(column);
+                        break;
+                    }
+                    else if(mchar == rowsDelimiter) {
+                        row.Add(column);
+                        break;
+                    } else column += mchar;
+
+                    if (index == length) {
+                        row.Add(column);
+                        break;
+                    }
+                } while (index < length);
+                rows.Add(row);
+            }
+            return rows;
+        }
+        public static DataTable ToTable(string textfilePath, string columnsDelimiter="\t", string rowsDelimiter="\r\n",int maxrow = 999999999)
         {
             var document = new ChainedFile(textfilePath);
-            document.WarpsSplitter = columnsDelimited;
-            document.LinesSplitter = rowsDelimited;
+            document.WarpsSplitter = columnsDelimiter;
+            document.LinesSplitter = rowsDelimiter;
             document.ColumnsLabelsIndex = 0;
             document.Count();
             DataTable table = new DataTable();
@@ -1359,31 +1426,31 @@ namespace MiMFa.Service
                 table.Rows.Add((from v in row select (object)v).Take(len).ToArray());
             return table;
         }
-        public static string ToString(SmartTable miMFa_Table, string columnsDelimited = "\t", string rowsDelimited = "\r\n")
+        public static string ToString(SmartTable miMFa_Table, string columnsDelimiter = "\t", string rowsDelimiter = "\r\n")
         {
-            return string.Join(rowsDelimited,ToStrings(miMFa_Table, columnsDelimited));
+            return string.Join(rowsDelimiter,ToStrings(miMFa_Table, columnsDelimiter));
         }
-        public static string ToString(DataTable dt, string columnsDelimited = "\t", string rowsDelimited = "\r\n")
+        public static string ToString(DataTable dt, string columnsDelimiter = "\t", string rowsDelimiter = "\r\n")
         {
-            return string.Join(rowsDelimited, ToStrings(dt, columnsDelimited));
+            return string.Join(rowsDelimiter, ToStrings(dt, columnsDelimiter));
         }
-        public static IEnumerable<string> ToStrings(DataTable dt, string columnsDelimited = "\t")
+        public static IEnumerable<string> ToStrings(DataTable dt, string columnsDelimiter = "\t")
         {
             string s = "";
             for (int i = 0; i < dt.Columns.Count; i++)
-                s += dt.Columns[i].ColumnName + columnsDelimited;
-            yield return s.Length > columnsDelimited.Length ? s.Substring(0, s.Length - columnsDelimited.Length) : s;
+                s += dt.Columns[i].ColumnName + columnsDelimiter;
+            yield return s.Length > columnsDelimiter.Length ? s.Substring(0, s.Length - columnsDelimiter.Length) : s;
             foreach (DataRow item in dt.Rows)
-                yield return string.Join(columnsDelimited, item.ItemArray);
+                yield return string.Join(columnsDelimiter, item.ItemArray);
         }
-        public static IEnumerable<string> ToStrings(SmartTable dt, string columnsDelimited = "\t")
+        public static IEnumerable<string> ToStrings(SmartTable dt, string columnsDelimiter = "\t")
         {
             string s = "";
-            yield return s.Length > columnsDelimited.Length ? s.Substring(0, s.Length - columnsDelimited.Length) : s;
+            yield return s.Length > columnsDelimiter.Length ? s.Substring(0, s.Length - columnsDelimiter.Length) : s;
             foreach (DataRow item in dt.Rows)
-                yield return string.Join(columnsDelimited, item.ItemArray);
+                yield return string.Join(columnsDelimiter, item.ItemArray);
         }
-        public static List<T> ToList<T>(DataTable dataTable,params object[] constructorParams)
+        public static List<T> ToList<T>(DataTable dataTable, params object[] constructorParams)
         {
             List<T> result = new List<T>();
             Type type = typeof(T);
