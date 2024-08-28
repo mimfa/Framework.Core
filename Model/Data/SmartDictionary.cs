@@ -38,17 +38,31 @@ namespace MiMFa.Model
             }
         }
         public virtual Dictionary<T, F> Dictionary => this;
-        public virtual bool AddOrSet(T key, F value, Func<F, F, F> valueMaker, F defValue = default(F))
+        public virtual bool AddOrSet(T key, F oldValue, Func<F, F, F> newValueMaker, F defValue = default(F))
         {
             if (key == null) return false;
             if (ContainsKey(key))
             {
-                this[key] = valueMaker(this[key], value);
+                this[key] = newValueMaker(this[key], oldValue);
                 return false;
             }
             else
             {
-                Add(key, valueMaker(defValue, value));
+                Add(key, newValueMaker(defValue, oldValue));
+                return true;
+            }
+        }
+        public virtual bool AddOrSet(T key, Func<F> oldValueMaker, Func<F, F, F> newValueMaker, F defValue = default(F))
+        {
+            if (key == null) return false;
+            if (ContainsKey(key))
+            {
+                this[key] = newValueMaker(this[key], oldValueMaker());
+                return false;
+            }
+            else
+            {
+                Add(key, newValueMaker(defValue, oldValueMaker()));
                 return true;
             }
         }
