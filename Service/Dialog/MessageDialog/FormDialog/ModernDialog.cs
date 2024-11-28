@@ -26,13 +26,13 @@ namespace MiMFa.Service.Dialog.MessageDialog.FormDialog
             FMove.AddToControl(tlp_Main,tableLayoutPanel1,p_Content, l_Subject,p_TR, MSGContent, pb_Icon);
         }
 
-        public ModernDialog(string text = "", string caption = "", MessageBoxButtons buttuns = MessageBoxButtons.OK, MessageMode icon = MessageMode.Message, MessageBoxDefaultButton dbtn = MessageBoxDefaultButton.Button1, MessageBoxOptions rtlReading = MessageBoxOptions.DefaultDesktopOnly, string defaultValue = "") : this()
+        public ModernDialog(string text = "", string caption = "", MessageBoxButtons buttuns = MessageBoxButtons.OK, MessageMode icon = MessageMode.Message, MessageBoxDefaultButton dbtn = MessageBoxDefaultButton.Button1, MessageBoxOptions rtlReading = MessageBoxOptions.DefaultDesktopOnly, string defaultValue = "", params string[] options) : this()
         {
-            Set(text, caption, buttuns, icon, dbtn, rtlReading, defaultValue);
+            Set(text, caption, buttuns, icon, dbtn, rtlReading, defaultValue, options);
         }
-        public DialogResult ShowDialog(string text , string caption = "", MessageBoxButtons buttuns = MessageBoxButtons.OK, MessageMode icon = MessageMode.Message, MessageBoxDefaultButton dbtn = MessageBoxDefaultButton.Button1, MessageBoxOptions rtlReading = MessageBoxOptions.DefaultDesktopOnly, string defaultValue = "")
+        public DialogResult ShowDialog(string text , string caption = "", MessageBoxButtons buttuns = MessageBoxButtons.OK, MessageMode icon = MessageMode.Message, MessageBoxDefaultButton dbtn = MessageBoxDefaultButton.Button1, MessageBoxOptions rtlReading = MessageBoxOptions.DefaultDesktopOnly, string defaultValue = "", params string[] options)
         {
-            Set(text, caption, buttuns, icon, dbtn, rtlReading, defaultValue);
+            Set(text, caption, buttuns, icon, dbtn, rtlReading, defaultValue, options);
             CurrentID = string.Join("'", caption, icon, IDRegex.Replace(text, "'")).GetHashCode();
             p_TR.Hide();
             try
@@ -49,9 +49,9 @@ namespace MiMFa.Service.Dialog.MessageDialog.FormDialog
             try { return base.ShowDialog(); } catch { try { base.Close(); } catch { } }
             return DialogResult.Abort;
         }
-        public string GetDialog(string text , string caption = "", MessageBoxButtons buttuns = MessageBoxButtons.OK, MessageMode icon = MessageMode.Message, MessageBoxDefaultButton dbtn = MessageBoxDefaultButton.Button1, MessageBoxOptions rtlReading = MessageBoxOptions.DefaultDesktopOnly, string defaultValue = "")
+        public string GetDialog(string text , string caption = "", MessageBoxButtons buttuns = MessageBoxButtons.OK, MessageMode icon = MessageMode.Message, MessageBoxDefaultButton dbtn = MessageBoxDefaultButton.Button1, MessageBoxOptions rtlReading = MessageBoxOptions.DefaultDesktopOnly, string defaultValue = "", params string[] options)
         {
-            Set(text, caption, buttuns, icon, dbtn, rtlReading, defaultValue);
+            Set(text, caption, buttuns, icon, dbtn, rtlReading, defaultValue, options);
             p_TR.Show();
             cb_AgainShow.Checked = true;
             cb_AgainShow.Hide();
@@ -60,7 +60,7 @@ namespace MiMFa.Service.Dialog.MessageDialog.FormDialog
             return DialogResult != DialogResult.OK?null: TextResult.Text;
         }
 
-        public void Set(string text = "", string caption = "", MessageBoxButtons buttuns = MessageBoxButtons.OK, MessageMode icon = MessageMode.Message, MessageBoxDefaultButton dbtn = MessageBoxDefaultButton.Button1, MessageBoxOptions rtlReading = MessageBoxOptions.DefaultDesktopOnly, string defaultValue = "")
+        public void Set(string text = "", string caption = "", MessageBoxButtons buttuns = MessageBoxButtons.OK, MessageMode icon = MessageMode.Message, MessageBoxDefaultButton dbtn = MessageBoxDefaultButton.Button1, MessageBoxOptions rtlReading = MessageBoxOptions.DefaultDesktopOnly, string defaultValue = "", params string[] options)
         {
             ControlService.SetControlThreadSafe(this, a =>
              {
@@ -71,6 +71,21 @@ namespace MiMFa.Service.Dialog.MessageDialog.FormDialog
                  cb_AgainShow.Text = Default.Translate("Show Again");
                  MSGContent.Text = text;
                  l_Subject.Text = caption;
+                 if (options.Length > 0)
+                 {
+                     Font f = TextResult.Font;
+                     Color fc = TextResult.ForeColor;
+                     Color bc = TextResult.BackColor;
+                     int w = TextResult.Width;
+                     TextResult = new ComboBox();
+                     ((ComboBox)TextResult).Items.AddRange(options);
+                     ((ComboBox)TextResult).DropDownStyle = ComboBoxStyle.DropDownList;
+                     ((ComboBox)TextResult).FlatStyle = FlatStyle.Flat;
+                     ((ComboBox)TextResult).Font = f;
+                     ((ComboBox)TextResult).ForeColor = fc;
+                     ((ComboBox)TextResult).BackColor = bc;
+                     ((ComboBox)TextResult).Width = w;
+                 }
                  TextResult.Text = defaultValue;
                  switch (buttuns)
                  {
@@ -215,7 +230,7 @@ namespace MiMFa.Service.Dialog.MessageDialog.FormDialog
                     else if (btn_Cancel.Visible) Close();
                     break;
                 case Keys.Escape:
-                    if(TextResult.Visible) TextResult.Clear();
+                    if(TextResult.Visible) TextResult.Text = "";
                     else Close();
                     break;
                 default:

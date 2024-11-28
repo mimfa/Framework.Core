@@ -170,7 +170,6 @@
             this.TextResult.Name = "TextResult";
             this.TextResult.Size = new System.Drawing.Size(188, 22);
             this.TextResult.TabIndex = 6;
-            this.TextResult.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             this.TextResult.TextChanged += new System.EventHandler(this.TextResult_TextChanged);
             this.TextResult.KeyUp += new System.Windows.Forms.KeyEventHandler(this.TextResult_KeyUp);
             // 
@@ -270,6 +269,6 @@
         private System.Windows.Forms.PictureBox pb_Icon;
         private System.Windows.Forms.Label l_Subject;
         private System.Windows.Forms.Panel p_TR;
-        public System.Windows.Forms.TextBox TextResult;
+        public System.Windows.Forms.Control TextResult;
     }
 }

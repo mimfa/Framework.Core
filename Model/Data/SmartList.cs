@@ -40,10 +40,24 @@ namespace MiMFa.Model
         }
 
 
-        public virtual T[] AddArray(params T[] array)
+        public virtual T[] AddRange(params T[] array)
         {
-            AddRange(array);
+            AddRange((IEnumerable<T>)array);
             return array;
+        }
+
+        public virtual int DistinctAddRange(params T[] array)
+        {
+            int b = 0;
+            foreach (var value in array) 
+                if (DistinctAdd(value)) b++;
+            return b;
+        }
+        public virtual bool DistinctAdd(T value)
+        {
+            bool b = false;
+            if (b = !Contains(value)) Add(value);
+            return b;
         }
     }
 }

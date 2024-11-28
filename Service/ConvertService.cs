@@ -692,6 +692,27 @@ namespace MiMFa.Service
             }
             return str;
         }
+        public static string ToAbbreviation(string name, bool justASCIIAlfabet = true)
+        {
+            if (name == null) return "";
+            string sp = "[\\s,.=+\\-\\/\\\\'\"?<>:;~`!@#$%^&*(){}\\{\\}]+";
+            if (name == name.ToUpper())
+                if (!Regex.IsMatch(name, sp)) return name;
+                else if(justASCIIAlfabet) name = name.ToLower();
+            List<char> stra = new List<char>();
+            foreach (var word in Regex.Split(name, sp))
+                if (!string.IsNullOrWhiteSpace(word))
+                {
+                    bool b = true;
+                    foreach (char ch in word)
+                        if (b || char.IsUpper(ch))
+                        {
+                            stra.Add(ch);
+                            b = false;
+                        }
+                }
+            return string.Join("", stra);
+        }
         public static string ToConcatedName(string name, bool justASCIIAlfabet = true)
         {
             if (name == null) return "";
@@ -1009,7 +1030,6 @@ namespace MiMFa.Service
            return new IPAddress((from v in address.Split('.') select ((byte)TryToInt(v))).ToArray());
         }
         #endregion
-
 
         #region *file*
         public static string ToTrimedString(string fileAddress)
@@ -1936,6 +1956,7 @@ namespace MiMFa.Service
             worksheet.Activate();
             // changing the name of active sheet
             worksheet.Name = PathService.NormalizeForFileAndDirectoryName(sheetName,30);
+            worksheet.EnableFormatConditionsCalculation = false;
 
             // storing Each row and column value to excel sheet
             int r = 1;
@@ -1952,6 +1973,7 @@ namespace MiMFa.Service
             worksheet.Activate();
             // changing the name of active sheet
             worksheet.Name = PathService.NormalizeForFileAndDirectoryName(sheetName,30);
+            worksheet.EnableFormatConditionsCalculation = false;
 
             // storing Each row and column value to excel sheet
             int r = 1;
@@ -1969,7 +1991,8 @@ namespace MiMFa.Service
 
             // changing the name of active sheet
             worksheet.Name = PathService.NormalizeForFileAndDirectoryName(SelectService.First(sheetName,dt.TableName,"sheet1"), 30);
-            
+            worksheet.EnableFormatConditionsCalculation = false;
+
             bool hascf = forceComputeStyles;
             int addtorow = 1;
             // storing header part in Excel

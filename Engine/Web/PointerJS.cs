@@ -16,15 +16,17 @@ namespace MiMFa.Engine.Web
         public PointerMode Mode { get; set; } = PointerMode.Pure;
         public Func<string, IEnumerable<object>, object> Execute { get; set; } = (s,a) => s;
         public object Evaluate(string code) => Execute(code,new object[] { });
-        public bool Multiple { get; set; } = false;
+        public PointerJS Sequence { get; set; } = null;
         public PointerJS Source { get; set; } = null;
         public string Script { get; set; } = null;
-        public bool AccessToJQuery { get; set; } = false;
+
+        public bool _Multiple { get; set; } = false;
+        public bool _AccessToJQuery { get; set; } = false;
 
         public PointerJS(Func<string, IEnumerable<object>, object> executer, bool all = false, PointerJS source = null)
         {
             Execute = executer;
-            Multiple = all;
+            _Multiple = all;
             Source = source;
             Initialize();
         }
@@ -32,7 +34,7 @@ namespace MiMFa.Engine.Web
         {
             Mode = mode;
             Pointer = pointer;
-            Multiple = all;
+            _Multiple = all;
             Source = source;
             Initialize();
         }
@@ -41,7 +43,7 @@ namespace MiMFa.Engine.Web
             Execute = executer;
             Mode = mode;
             Pointer = pointer;
-            Multiple = all;
+            _Multiple = all;
             Source = source;
             Initialize();
         }
@@ -50,17 +52,18 @@ namespace MiMFa.Engine.Web
             Pointer = string.Join(", ", x, y);
             Mode = PointerMode.Location;
             Execute = executer;
-            Multiple = all;
+            _Multiple = all;
             Source = source;
             Initialize();
         }
         public PointerJS(PointerJS pointer, bool? all = null) : this(pointer, pointer.Script, all)
         {
         }
-        public PointerJS(PointerJS pointer, string script, bool? all = null) : this(pointer.Pointer, pointer.Execute, pointer.Mode, all ?? pointer.Multiple, pointer.Source)
+        public PointerJS(PointerJS pointer, string script, bool? all = null) : this(pointer.Pointer, pointer.Execute, pointer.Mode, all ?? pointer._Multiple, pointer.Source)
         {
+            Sequence = pointer.Sequence;
             Script = script;
-            AccessToJQuery = pointer.AccessToJQuery;
+            _AccessToJQuery = pointer._AccessToJQuery;
             Initialize();
         }
 
@@ -75,23 +78,23 @@ namespace MiMFa.Engine.Web
         public string ElementPointer()
         {
             var source = Source == null?"document": Source.ToString();
-            Multiple = false;
+            _Multiple = false;
             switch (Mode)
             {
                 case PointerMode.Id:
-                    return source + ".getElementById(" + CreateString(Pointer) + ")";
+                    return string.Join("", source, ".getElementById(", ToScript(Pointer), ")");
                 case PointerMode.Name:
-                    return source + ".getElementsByName(" + CreateString(Pointer) + ")[0]";
+                    return string.Join("", source, ".getElementsByName(", ToScript(Pointer), ")[0]");
                 case PointerMode.Tag:
-                    return source + ".getElementsByTagName(" + CreateString(Pointer) + ")[0]";
+                    return string.Join("", source, ".getElementsByTagName(", ToScript(Pointer), ")[0]");
                 case PointerMode.Class:
-                    return source + ".getElementsByClassName(" + CreateString(Pointer) + ")[0]";
+                    return string.Join("", source, ".getElementsByClassName(", ToScript(Pointer), ")[0]");
                 case PointerMode.Location:
-                    return source + ".elementFromPoint(" + CreateString(Pointer) + ")";
+                    return string.Join("", source, ".elementFromPoint(", ToScript(Pointer), ")");
                 case PointerMode.Query:
-                    return source + ".querySelector(" + CreateString(Pointer) + ")";
+                    return string.Join("", source, ".querySelector(", ToScript(Pointer), ")");
                 case PointerMode.XPath:
-                    return source + ".evaluate(" + CreateString(Pointer) + ", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue";
+                    return string.Join("", source, ".evaluate(", ToScript(Pointer), ", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue");
                 case PointerMode.Pure:
                 default:
                     return Pointer;
@@ -100,23 +103,23 @@ namespace MiMFa.Engine.Web
         public string ElementsPointer()
         {
             var source = Source ==null?"document": Source.ToString();
-            Multiple = false;
+            _Multiple = false;
             switch (Mode)
             {
                 case PointerMode.Id:
-                    return "["+source + ".getElementById(" + CreateString(Pointer) + ")]";
+                    return string.Join("", "[", source, ".getElementById(", ToScript(Pointer), ")]");
                 case PointerMode.Name:
-                    return source + ".getElementsByName(" + CreateString(Pointer) + ")";
+                    return string.Join("", source, ".getElementsByName(", ToScript(Pointer), ")");
                 case PointerMode.Tag:
-                    return source + ".getElementsByTagName(" + CreateString(Pointer) + ")";
+                    return string.Join("", source, ".getElementsByTagName(", ToScript(Pointer), ")");
                 case PointerMode.Class:
-                    return source + ".getElementsByClassName(" + CreateString(Pointer) + ")";
+                    return string.Join("", source, ".getElementsByClassName(", ToScript(Pointer), ")");
                 case PointerMode.Location:
-                    return source + ".elementsFromPoint(" + CreateString(Pointer) + ")";
+                    return string.Join("", source, ".elementsFromPoint(", ToScript(Pointer), ")");
                 case PointerMode.Query:
-                    return source + ".querySelectorAll(" + CreateString(Pointer) + ")";
+                    return string.Join("", source, ".querySelectorAll(", ToScript(Pointer), ")");
                 case PointerMode.XPath:
-                    return "Array.from((function*(){ let iterator = "+source + ".evaluate(" + CreateString(Pointer) + ", document, null, XPathResult.UNORDERED_NODE_ITERATOR_TYPE, null); let current = iterator.iterateNext(); while(current){ yield current; current = iterator.iterateNext(); }  })())";
+                    return string.Join("", "Array.from((function*(){ let iterator = ", source, ".evaluate(", ToScript(Pointer), ", document, null, XPathResult.UNORDERED_NODE_ITERATOR_TYPE, null); let current = iterator.iterateNext(); while(current){ yield current; current = iterator.iterateNext(); }  })())");
                 default:
                     return Pointer;
             }
@@ -181,7 +184,7 @@ namespace MiMFa.Engine.Web
                 return Statement.Loop((IEnumerable<TIn>)o, process);
             else return process((TIn)o);
         }
-        public virtual object Perform(params object[] args) => Execute(ToString(), args);
+        public virtual object Perform(params object[] args) => Execute(ToScript(), args);
         public virtual PointerJS PerformPointer(params object[] args)
         {
             var pName = "pointer_" + DateTime.Now.Ticks;
@@ -189,6 +192,27 @@ namespace MiMFa.Engine.Web
             return new PointerJS(pName,Execute, PointerMode.Pure);
         }
 
+        /// <summary>
+        /// Add this pointer to sequence and continue with nextPointer
+        /// </summary>
+        /// <param name="nextPointer">the next pointer</param>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS Also(PointerJS nextPointer) 
+        { 
+            nextPointer.Sequence = this;
+            return nextPointer;
+        }
+        /// <summary>
+        /// Add this pointer to sequence and continue with nextPointer
+        /// </summary>
+        /// <param name="nextCode">the next code to select</param>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS Also(string nextCode) => new PointerJS(this, nextCode, null) { Sequence=this };
+        /// <summary>
+        /// Add this pointer to sequence and continue with a new null pointer
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS Also() => Also("");
 
         public PointerJS SelectPure(string pointer, bool all = false) => Select(pointer, PointerMode.Pure, all);
         public PointerJS SelectById(string pointer, bool all = false) => Select(pointer, PointerMode.Id, all);
@@ -210,7 +234,7 @@ namespace MiMFa.Engine.Web
             Pointer = pointer.Pointer;
             Mode = pointer.Mode;
             Execute = pointer.Execute;
-            Multiple = pointer.Multiple;
+            _Multiple = pointer._Multiple;
             Source = pointer.Source??Source;
             Script = null;
             return this;
@@ -238,25 +262,191 @@ namespace MiMFa.Engine.Web
         }
 
 
-        public virtual PointerJS All()=> new PointerJS(this, true);
-        public virtual PointerJS One()=> new PointerJS(this, false);
-        public virtual PointerJS The(int index = 0)=> All().On("["+ index + "]");
-        public virtual PointerJS First()=> All().On("[0]");
-        public virtual PointerJS Last()=> All().On(".slice(-1).pop()");
-        public virtual PointerJS Reverse() => On(".reverse()");
-        public virtual PointerJS Slice(int index = 0, int? length = null) => On(".slice(" + index + (length == null ? ")" : $", {length})"));
+        /// <summary>
+        /// {0}nextCode
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS With(object value) => With(ToScript(value));
+        /// <summary>
+        /// {0}nextCode
+        /// </summary>
+        /// <param name="nextCode">a code snippet</param>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS With(string nextCode) => Format("{0}{1}", nextCode);
+        /// <summary>
+        /// {0}
+        /// </summary>
+        /// <param name="nextCode">a code snippet</param>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS With() => Format("{0}");
+        /// <summary>
+        /// {0}nextPointer
+        /// </summary>
+        /// <param name="nextPointer">other pointer</param>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS With(PointerJS nextPointer) => With(nextPointer == null ? ToScript(null) : nextPointer.ToString());
 
-        public PointerJS On(PointerJS nextPointer) => On(nextPointer.ToString());
-        public virtual PointerJS On(string nextCode) => Format("{0}{1}", nextCode);
+        /// <summary>
+        /// {0}.nextCode
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS On(object value) => On(ToScript(value));
+        /// <summary>
+        /// {0}.nextCode
+        /// </summary>
+        /// <param name="nextCode">a code snippet</param>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS On(string nextCode) => Format("{0}.{1}", nextCode);
+        /// <summary>
+        /// {0}[index[
+        /// </summary>
+        /// <param name="index">thw item index</param>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS On(int index) => Format("{0}[{1}]", index.ToString());
+        /// <summary>
+        /// {0}.
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS On() => On("{0}.");
+        /// <summary>
+        /// {0}.nextPointer
+        /// </summary>
+        /// <param name="nextPointer">other pointer</param>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS On(PointerJS nextPointer) => On(nextPointer == null ? ToScript(null) : nextPointer.ToString());
 
-        public PointerJS Follows(PointerJS nextPointer) => Follows(nextPointer.ToString());
-        public virtual PointerJS Follows(string nextCode) => Format("{0};{1}", nextCode);
-        public PointerJS Follows() => Format("{0};");
+        /// <summary>
+        /// {0}.nextCode(args)
+        /// </summary>
+        /// <param name="nextCode">a code snippet</param>
+        /// <param name="args">the function arguments</param>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS On(string nextCode, params object[] args) => On(nextCode, string.Join(", ", from arg in args select ToScript(arg)));
+        /// <summary>
+        /// {0}[index](args)
+        /// </summary>
+        /// <param name="index">thw item index</param>
+        /// <param name="args">the function arguments</param>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS On(int index, params object[] args) => On(index, string.Join(", ", from arg in args select ToScript(arg)));
+        /// <summary>
+        /// {0}.nextPointer(args)
+        /// </summary>
+        /// <param name="nextPointer">other pointer</param>
+        /// <param name="args">the function arguments</param>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS On(PointerJS nextPointer, params object[] args) => On(nextPointer, string.Join(", ", from arg in args select ToScript(arg)));
 
-        public PointerJS Prepend(PointerJS pointer) => Prepend(pointer.ToString());
+        /// <summary>
+        /// {0}.nextCode(args)
+        /// </summary>
+        /// <param name="nextCode">a code snippet</param>
+        /// <param name="args">the function arguments</param>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS On(string nextCode, string args) => Format("{0}.{1}({2})", nextCode, args);
+        /// <summary>
+        /// {0}[index](args)
+        /// </summary>
+        /// <param name="index">thw item index</param>
+        /// <param name="args">the function arguments</param>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS On(int index, string args) => Format("{0}[{1}]({2})", index.ToString(), args);
+        /// <summary>
+        /// {0}.nextPointer(args)
+        /// </summary>
+        /// <param name="nextPointer">other pointer</param>
+        /// <param name="args">the function arguments</param>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS On(PointerJS nextPointer, string args) => On(nextPointer == null ? ToScript(null) : nextPointer.ToString(), args);
+
+        /// <summary>
+        /// {0}.nextCode(args)
+        /// </summary>
+        /// <param name="nextCode">a code snippet</param>
+        /// <param name="args">the function arguments</param>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS On(string nextCode, PointerJS args) => On(nextCode, args.ToString());
+        /// <summary>
+        /// {0}[index](args)
+        /// </summary>
+        /// <param name="index">thw item index</param>
+        /// <param name="args">the function arguments</param>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS On(int index, PointerJS args) => On(index.ToString(), args.ToString());
+        /// <summary>
+        /// {0}.nextPointer(args)
+        /// </summary>
+        /// <param name="nextPointer">other pointer</param>
+        /// <param name="args">the function arguments</param>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS On(PointerJS nextPointer, PointerJS args) => On(nextPointer == null ? ToScript(null) : nextPointer.ToString(), args.ToString());
+
+        /// <summary>
+        /// {0}\r\ncode
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS Then(object value) => Then(ToScript(value));
+        /// <summary>
+        /// {0}\r\ncode
+        /// </summary>
+        /// <param name="code">a code snippet</param>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS Then(string code) => Format("{0}\r\n(()=>{{{1}}})()", code);
+        /// <summary>
+        /// {0}\r\n
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS Then() => Format("{0}\r\n");
+        /// <summary>
+        /// {0}\r\npointer
+        /// </summary>
+        /// <param name="pointer">other pointer</param>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS Then(PointerJS pointer) => Then(pointer == null ? ToScript(null) : pointer.ToString());
+
+        /// <summary>
+        /// {0};\r\nnextCode
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS Follows(object value) => Follows(ToScript(value));
+        /// <summary>
+        /// {0};\r\nnextCode
+        /// </summary>
+        /// <param name="nextCode">the next code to select</param>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS Follows(string nextCode) => Format("{0};\r\n{1}", nextCode);
+        /// <summary>
+        /// {0};\r\n
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS Follows() => Follows("");
+        /// <summary>
+        /// {0};\r\nextPointer
+        /// </summary>
+        /// <param name="nextPointer">the next pointer</param>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS Follows(PointerJS nextPointer) => Follows(nextPointer == null ? ToScript(null) : nextPointer.ToString());
+
+        public virtual PointerJS Prepend(object value) => Prepend(ToScript(value));
         public virtual PointerJS Prepend(string code) => new PointerJS(this, code + ToString());
-        public PointerJS Append(PointerJS pointer) => Append(pointer.ToString());
-        public virtual PointerJS Append(string code) => new PointerJS(this, ToString() + code);
+        public PointerJS Prepend(PointerJS pointer) => Prepend(pointer == null ? ToScript(null) : pointer.ToString());
+
+        public virtual PointerJS Append(object value) => Append(ToScript(value));
+        public virtual PointerJS Append(string code) => new PointerJS(this, ToString());
+        public PointerJS Append(PointerJS pointer) => Append(pointer == null ? ToScript(null) : pointer.ToString());
+
+
+        public virtual PointerJS A() => new PointerJS(this);
+        public virtual PointerJS One() => new PointerJS(this, false);
+        public virtual PointerJS All() => new PointerJS(this, true);
+        public virtual PointerJS The() => All();
+        public virtual PointerJS The(string name) => All().Format("{0}['{1}']", name);
+        public virtual PointerJS The(int index) => All().Format("{0}[{1}]", index.ToString());
+        public virtual PointerJS First() => All().With("[0]");
+        public virtual PointerJS Last() => All().With(".slice(-1).pop()");
+
+        public virtual PointerJS Reverse() => With(".reverse()");
+        public virtual PointerJS Slice(int index = 0, int? length = null) => With($".slice({index}" + (length == null ? ")" : $", {length})"));
 
         public virtual bool Wait(long milisecond = 1000)
         {
@@ -276,105 +466,256 @@ namespace MiMFa.Engine.Web
             return false;
         }
 
-        public PointerJS Join(PointerJS pointer) => Join(pointer.ToString());
+        public virtual PointerJS Join(object value) => Join(ToScript(value));
         public virtual PointerJS Join(string code) => Format("{0},{1}", code);
         public virtual PointerJS Join() => Format("{0},");
-        public PointerJS Join(string name, PointerJS pointer) => Join(name, pointer.ToString());
-        public virtual PointerJS Join(string name,string code) => Format("{0},{1}:{2}", CreateString(name), code);
+        public PointerJS Join(PointerJS pointer) => Join(pointer == null ? ToScript(null) : pointer.ToString());
+
+        public virtual PointerJS Join(string name,object value) => Join(name, ToScript(value));
+        public virtual PointerJS Join(string name,string code) => Format("{0},{1}:{2}", ToScript(name), code);
+        public PointerJS Join(string name, PointerJS pointer) => Join(name, pointer == null ? ToScript(null) : pointer.ToString());
+
         public PointerJS Collect() => Format("{{0}}");
         public PointerJS Array() => Format("[{0}]");
-        public PointerJS Then(PointerJS pointer) => Then(pointer.ToString());
-        public virtual PointerJS Then(string code) => Format("{0}(()=>{{{1}}})()", code);
-        public virtual PointerJS Then() => Format("(()=>{{{0}}})()");
 
         /// <summary>
         /// There should be a yield code in the Script
         /// </summary>
         /// <returns></returns>
         public virtual PointerJS Iterate() => Format("Array.from((function*(){{{0}}})())");
-        public PointerJS Yield(PointerJS pointer) => Yield(pointer.ToString());
-        public virtual PointerJS Yield(string code) => Format("{0}; yield {1}",code);
-        public virtual PointerJS Yield() => Format(" yield {0}");
-        public PointerJS Return(PointerJS pointer) => Return(pointer.ToString());
-        public virtual PointerJS Return(string code) => Format("{0}; return {1}", code);
-        public virtual PointerJS Return() => Format(" return {0}");
 
-        public PointerJS If(PointerJS pointer) => If(pointer.ToString());
-        public virtual PointerJS If(string conditionCode) => Format("if({1}) ", conditionCode).Then(this);
-        public virtual PointerJS If() => Format("if({0}) ");
-        public PointerJS Else(PointerJS pointer) => Else(pointer.ToString());
-        public virtual PointerJS Else(string conditionCode) => Else().Then(conditionCode);
-        public virtual PointerJS Else() => Format("{0}; else ");
-        public PointerJS Where(PointerJS pointer) => Where(pointer.ToString());
-        public virtual PointerJS Where(string conditionCode) => Format("({1})? ", conditionCode).On(this);
+        /// <summary>
+        /// {0}; yield code
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS Yield(object value) => Yield(ToScript(value));
+        /// <summary>
+        /// {0}; yield code
+        /// </summary>
+        /// <param name="code">a code snippet</param>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS Yield(string code) => Format("{0}\r\nyield {1}", code);
+        /// <summary>
+        /// yield {0}
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS Yield() => Format("\r\nyield {0}");
+        /// <summary>
+        /// {0}; yield pointer
+        /// </summary>
+        /// <param name="pointer">other pointer</param>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS Yield(PointerJS pointer) => Yield(pointer == null ? ToScript(null) : pointer.ToString());
+
+        /// <summary>
+        /// {0}; return code
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS Return(object value) => Return(ToScript(value));
+        /// <summary>
+        /// {0}; return code
+        /// </summary>
+        /// <param name="code">a code snippet</param>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS Return(string code) => Format("{0}\r\nreturn {1}", code);
+        /// <summary>
+        /// return {0}
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS Return() => Format("\r\nreturn {0}");
+        /// <summary>
+        /// {0}; return pointer
+        /// </summary>
+        /// <param name="pointer">other pointer</param>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS Return(PointerJS pointer) => Return(pointer == null ? ToScript(null) : pointer.ToString());
+
+        public virtual PointerJS If(object condition) => If(ToScript(condition));
+        public virtual PointerJS If(string conditionCode) => Format("\r\nif({1}) ", conditionCode).Then(this);
+        public virtual PointerJS If() => Format("\r\nif({0}) ");
+        public PointerJS If(PointerJS pointer) => If(pointer == null ? ToScript(null) : pointer.ToString());
+        public virtual PointerJS Else(object value) => Else().Then(value);
+        public virtual PointerJS Else(string code) => Else().Then(code);
+        public virtual PointerJS Else() => Format("{0}\r\nelse ");
+        public PointerJS Else(PointerJS pointer) => Else(pointer == null ? ToScript(null) : pointer.ToString());
+
+        public virtual PointerJS Where(object condition) => Where(ToScript(condition));
+        public virtual PointerJS Where(string conditionCode) => Format("({1})? ", conditionCode).With(this);
         public virtual PointerJS Where() => Format("({0})? ");
-        public PointerJS ElseWhere(PointerJS pointer) => ElseWhere(pointer.ToString());
-        public virtual PointerJS ElseWhere(string code) => ElseWhere().On(code);
+        public PointerJS Where(PointerJS pointer) => Where(pointer == null ? ToScript(null) : pointer.ToString());
+        public virtual PointerJS ElseWhere(object value) => ElseWhere(ToScript(value));
+        public virtual PointerJS ElseWhere(string code) => ElseWhere().With(code);
         public virtual PointerJS ElseWhere() => Format("{0} : ");
-        public PointerJS While(PointerJS pointer) => While(pointer.ToString());
-        public virtual PointerJS While(string conditionCode) => Format("while({1}) ", conditionCode).Then(this);
-        public virtual PointerJS While() => Format("while({0}) ");
-        public PointerJS ForEach(string elementName, PointerJS pointer) => ForEach(elementName, pointer.ToString());
-        public virtual PointerJS ForEach(string elementName,string collectionCode) => Format("for(let {1} of {2}) ", elementName, collectionCode).Then(this);
-        public virtual PointerJS ForEach(string elementName) => Format("for(let {1} of {0}) ", elementName);
-        public virtual PointerJS ForEach() => Format("for(let {1} of {0}) {1}", "element");
-        public PointerJS ForIn(string elementName, PointerJS pointer) => ForIn(elementName, pointer.ToString());
-        public virtual PointerJS ForIn(string elementName, string collectionCode) => Format("for(let {1} in {2}) ", elementName, collectionCode).Then(this);
-        public virtual PointerJS ForIn(string elementName) => Format("for(let {1} in {0}) ", elementName);
-        public virtual PointerJS ForIn() => Format("for(let {1} in {0}) {1}", "element");
+        public PointerJS ElseWhere(PointerJS pointer) => ElseWhere(pointer==null?ToScript(null):pointer.ToString());
 
-        public PointerJS As(string elementName, PointerJS nextPointer) => As(elementName, nextPointer.ToString());
-        public virtual PointerJS As(string elementName,string code) => Format("(({1})=>{2})({0})", elementName, code);
+        public virtual PointerJS While(object condition) => While(ToScript(condition));
+        public virtual PointerJS While(string conditionCode) => Format("\r\nwhile({1}) ", conditionCode).Then(this);
+        public virtual PointerJS While() => Format("\r\nwhile({0}) ");
+        public PointerJS While(PointerJS pointer) => While(pointer == null ? ToScript(null) : pointer.ToString());
+
+        public virtual PointerJS When(object condition) => When(ToScript(condition));
+        public virtual PointerJS When(string conditionCode) => Format("\r\ndo {{0}}\r\nwhile({1});", conditionCode);
+        public PointerJS When(PointerJS pointer) => When(pointer == null ? ToScript(null) : pointer.ToString());
+
+        public virtual PointerJS ForEach(string elementName, object collection) => ForEach(elementName, ToScript(collection));
+        public virtual PointerJS ForEach(string elementName, string collectionCode) => Format("\r\nfor(let {1} of {2}) ", elementName, collectionCode).Then(this);
+        public virtual PointerJS ForEach(string elementName) => Format("\r\nfor(let {1} of {0}) ", elementName);
+        public virtual PointerJS ForEach() => Format("\r\nfor(let {1} of {0}) {1}", "element");
+        public PointerJS ForEach(string elementName, PointerJS pointer) => ForEach(elementName, pointer == null ? ToScript(null) : pointer.ToString());
+        
+        public virtual PointerJS ForIn(string elementName, object collection) => ForIn(elementName, ToScript(collection));
+        public virtual PointerJS ForIn(string elementName, string collectionCode) => Format("\r\nfor(let {1} in {2}) ", elementName, collectionCode).Then(this);
+        public virtual PointerJS ForIn(string elementName) => Format("\r\nfor(let {1} in {0}) ", elementName);
+        public virtual PointerJS ForIn() => Format("\r\nfor(let {1} in {0}) {1}", "element");
+        public PointerJS ForIn(string elementName, PointerJS pointer) => ForIn(elementName, pointer == null ? ToScript(null) : pointer.ToString());
+
+        public virtual PointerJS As(string elementName,object value) => As(elementName, ToScript(value));
+        public virtual PointerJS As(string elementName, string code) => Format("(({1})=>{2})({0})", elementName, code);
         public virtual PointerJS As(string elementName) => Format("{1} = (()=>{{{0}}})()", elementName);
-        public virtual PointerJS Var(string elementName) => Format("var {1} = {0};", elementName);
-        public virtual PointerJS Let(string elementName) => Format("let {1} = {0};", elementName);
-        public virtual PointerJS Const(string elementName) => Format("const {1} = {0};", elementName);
+        public PointerJS As(string elementName, PointerJS nextPointer) => As(elementName, nextPointer == null ? ToScript(null) : nextPointer.ToString());
+       
+        public virtual PointerJS Var(string elementName) => Format("{0}\r\nvar {1}", elementName);
+        public virtual PointerJS Let(string elementName) => Format("{0}\r\nlet {1}", elementName);
+        public virtual PointerJS Const(string elementName) => Format("{0}\r\nconst {1}", elementName);
         public virtual PointerJS Named(string elementName) => Format("{1}:{0}", elementName);
 
-        public PointerJS And(PointerJS pointer) => And(pointer.ToString());
+        public virtual PointerJS Equal(object value) => Format("{0}={1}", ToScript(value));
+        public virtual PointerJS Equal(string code) => Format("{0}={1}", code);
+        public virtual PointerJS Equal() => Format("{0}=");
+        public virtual PointerJS Equal(PointerJS pointer) => Equal(pointer == null ? ToScript(null) : pointer.ToString());
+
+        public virtual PointerJS Minus(object value) => Minus(ToScript(value));
+        public virtual PointerJS Minus(string code) => Format("{0}-{1}", code);
+        public virtual PointerJS Minus() => Format("{0}-");
+        public virtual PointerJS Minus(PointerJS pointer) => Minus(pointer == null ? ToScript(null) : pointer.ToString());
+
+        public virtual PointerJS Plus(object value) => Plus(ToScript(value));
+        public virtual PointerJS Plus(string code) => Format("{0}+{1}", code);
+        public virtual PointerJS Plus() => Format("{0}+");
+        public virtual PointerJS Plus(PointerJS pointer) => Plus(pointer == null ? ToScript(null) : pointer.ToString());
+
+        public virtual PointerJS Multiple(object value) => Multiple(ToScript(value));
+        public virtual PointerJS Multiple(string code) => Format("{0}*{1}", code);
+        public virtual PointerJS Multiple() => Format("{0}*");
+        public virtual PointerJS Multiple(PointerJS pointer) => Multiple(pointer == null ? ToScript(null) : pointer.ToString());
+
+        public virtual PointerJS Divide(object value) => Divide(ToScript(value));
+        public virtual PointerJS Divide(string code) => Format("{0}/{1}", code);
+        public virtual PointerJS Divide() => Format("{0}/");
+        public virtual PointerJS Divide(PointerJS pointer) => Divide(pointer == null ? ToScript(null) : pointer.ToString());
+
+        public virtual PointerJS Power(object value) => Power(ToScript(value));
+        public virtual PointerJS Power(string code) => Format("{0}**{1}", code);
+        public virtual PointerJS Power() => Format("{0}**");
+        public virtual PointerJS Power(PointerJS pointer) => Power(pointer == null ? ToScript(null) : pointer.ToString());
+
+        public virtual PointerJS And(object value) => And(ToScript(value));
         public virtual PointerJS And(string code = "true") => Format("({0} && {1})", code);
-        public PointerJS Or(PointerJS pointer) => Or(pointer.ToString());
+        public PointerJS And(PointerJS pointer) => And(pointer == null ? ToScript(null) : pointer.ToString());
+
+        public virtual PointerJS Or(object value) => Or(ToScript(value));
         public virtual PointerJS Or(string code = "true") => Format("({0} || {1})", code);
+        public PointerJS Or(PointerJS pointer) => Or(pointer == null ? ToScript(null) : pointer.ToString());
 
         public virtual PointerJS Null() => Format("{0} null");
         public virtual PointerJS Nothing() => Format("{0} (()=>{{}})()");
 
-        public PointerJS Not(PointerJS pointer) => Not(pointer.ToString());
-        public virtual PointerJS Not(string code) => Format("({0} !== {1})", code);
+        /// <summary>
+        /// {0}!=code
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS Not(object value) => Not(ToScript(value));
+        /// <summary>
+        /// {0}!=code
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS Not(string code) => Format("({0}!={1})", code);
+        /// <summary>
+        /// (!{0})
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
         public virtual PointerJS Not() => Format("(!{0})");
+        /// <summary>
+        /// {0}!=pointer
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS Not(PointerJS pointer) => Not(pointer == null ? ToScript(null) : pointer.ToString());
 
-        public PointerJS Is(PointerJS pointer) => Is(pointer.ToString());
-        public virtual PointerJS Is(string code) => Format(" === {1}", code);
-        public PointerJS IsEquals(PointerJS pointer) => IsEquals(pointer.ToString());
-        public virtual PointerJS IsEquals(string code) => Format("({0} === {1})", code);
+        /// <summary>
+        /// {0} === code
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS Is(object value) => Is(ToScript(value));
+        /// <summary>
+        /// {0} === code
+        /// </summary>
+        /// <param name="code">a code snippet</param>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS Is(string code) => Format("{0}=={1}", code);
+        /// <summary>
+        /// {0}==
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS Is() => Format("{0}==");
+        /// <summary>
+        /// {0} === pointer
+        /// </summary>
+        /// <param name="pointer">other pointer</param>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS Is(PointerJS pointer) => Is(pointer == null ? ToScript(null) : pointer.ToString());
+
+        /// <summary>
+        /// ({0}===code)
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS IsEqual(object value) => IsEqual(ToScript(value));
+        /// <summary>
+        /// ({0}===code)
+        /// </summary>
+        /// <param name="code">a code snippet</param>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS IsEqual(string code) => Format("({0}==={1})", code);
+        /// <summary>
+        /// {0}===
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public virtual PointerJS IsEqual() => Format("{0}===");
+        /// <summary>
+        /// ({0}===pointer)
+        /// </summary>
+        /// <param name="pointer">other pointer</param>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS IsEqual(PointerJS pointer) => IsEqual(pointer == null ? ToScript(null) : pointer.ToString());
 
         public virtual PointerJS IsVisible() => IsHidden().Not();
         public virtual PointerJS IsHidden() => As("element", "element === null || element === undefined || element.offsetLeft < 0").Or(GetStyle().As("element","element.visibility === 'hidden' || element.display === 'none'"));
         public virtual PointerJS IsExists() => As("element", "element !== null && element !== undefined");   
-        public virtual PointerJS IsUndefined() => Is("undefined");
-        public virtual PointerJS IsNull() => Is("null");
+        public virtual PointerJS IsUndefined() => IsEqual("undefined");
+        public virtual PointerJS IsNull() => IsEqual("null");
 
-        public virtual PointerJS Count() => On("Array.from({0}).length");
+        public virtual PointerJS Count() => With("Array.from({0}).length");
 
         public virtual PointerJS SendKeys(string keys) => Scroll().Follows(InvokeKeyboardEvent(keys, "keydown"));
         public virtual PointerJS SendText(string text) => Scroll().Follows(InvokeKeyboardEvent(ConvertService.ToHotKeys(text), "keydown"));
-        public virtual PointerJS Scroll() => On(".scrollIntoView({ behavior: 'smooth', block: 'end'})");
+        public virtual PointerJS Scroll() => With(".scrollIntoView({ behavior: 'smooth', block: 'end'})");
         public virtual PointerJS ScrollTo(PointerJS pointer) => ScrollX(pointer).Follows(ScrollY(pointer));
         public virtual PointerJS ScrollTo(string codeX, string codeY) => ScrollX(codeX).Follows(ScrollY(codeY));
         public virtual PointerJS ScrollTo(int x, int y) => ScrollX(x).Follows(ScrollY(y));
-        public virtual PointerJS ScrollX(PointerJS pointer) => On(".scrollLeft").Set(pointer.Clone().PositionX());
-        public virtual PointerJS ScrollX(string code) => On(".scrollLeft").Set(code);
-        public virtual PointerJS ScrollX(int x) => On(".scrollLeft").Set(x);
-        public virtual PointerJS ScrollY(PointerJS pointer) => On(".scrollTop").Set(pointer.Clone().PositionY());
-        public virtual PointerJS ScrollY(string code) => On(".scrollTop").Set(code);
-        public virtual PointerJS ScrollY(int y) => On(".scrollTop").Set(y);
+        public virtual PointerJS ScrollX(PointerJS pointer) => With(".scrollLeft").Set(pointer.Clone().PositionX());
+        public virtual PointerJS ScrollX(string code) => With(".scrollLeft").Set(code);
+        public virtual PointerJS ScrollX(int x) => With(".scrollLeft").Set(x);
+        public virtual PointerJS ScrollY(PointerJS pointer) => With(".scrollTop").Set(pointer.Clone().PositionY());
+        public virtual PointerJS ScrollY(string code) => With(".scrollTop").Set(code);
+        public virtual PointerJS ScrollY(int y) => With(".scrollTop").Set(y);
         public virtual PointerJS Position() => PositionX().Join(PositionY()).Array();
-        public virtual PointerJS PositionX() => On(".offsetLeft");
-        public virtual PointerJS PositionY() => On(".offsetTop");
-        public virtual PointerJS Flow() => On(".blur()");
-        public virtual PointerJS Focus() => On(".focus()");
-        public virtual PointerJS Submit() => Scroll().Follows(On(".submit()"));
-        public virtual PointerJS Click() => Scroll().Follows(On(".click()"));// As("element", "element.scrollIntoView(); element.click();");
+        public virtual PointerJS PositionX() => With(".offsetLeft");
+        public virtual PointerJS PositionY() => With(".offsetTop");
+
+        public virtual PointerJS Flue() => With(".blur()");
+        public virtual PointerJS Focus() => With(".focus()");
+
+        public virtual PointerJS Submit() => Scroll().Follows(With(".submit()"));
+        public virtual PointerJS Click() => Scroll().Follows(With(".click()"));// As("element", "element.scrollIntoView(); element.click();");
         public virtual PointerJS DoubleClick() => InvokeMouseEvent("dblclick");
         public virtual PointerJS Hover() => InvokeMouseEvent("mouseenter");
         public virtual PointerJS InvokeMouseEvent(string eventName = "click") => InvokeEvent("MouseEvent", eventName);
@@ -385,110 +726,121 @@ namespace MiMFa.Engine.Web
                 //var e = jQuery.Event(`"+ eventName + @"`);
                 //e.keyCode = char.charCodeAt(0);
                 //$(").Append(").trigger(e);").For("char","`" +keys.Replace("`","\\`")+ "`.split('')");
-            return InvokeEvent("keyboardEvent",eventName,"null","char").ForEach("char", CreateString(keys)+ ".split('')");
+            return InvokeEvent("keyboardEvent",eventName,"null","char").ForEach("char", ToScript(keys)+ ".split('')");
         }
         public virtual PointerJS InvokeEvent(string eventName) => InvokeEvent("Event", eventName);
         public virtual PointerJS InvokeEvent(string eventType, string eventName, params string[] otherArgs)
         {
-            return On(".dispatchEvent(evt);").Prepend(string.Join("",
+            return With(".dispatchEvent(evt);").Prepend(string.Join("",
                 "var evt  = document.createEvent(`", eventType, "`);",
-                "evt.init" + eventType + "(", CreateString(eventName), ", true, true" + (otherArgs.Length>1 ? ", "+string.Join(", ", otherArgs) :"") + ");"));
+                "evt.init" + eventType + "(", ToScript(eventName), ", true, true" + (otherArgs.Length>1 ? ", "+string.Join(", ", otherArgs) :"") + ");"));
         }
         public virtual PointerJS InvokeEvents(string eventType, string eventName, IEnumerable<string[]> otherArgsList)
         {
-            var p = On(".dispatchEvent(evt);").Prepend(string.Join("", "var evt  = document.createEvent(", CreateString(eventType), "`);"));
+            var p = With(".dispatchEvent(evt);").Prepend(string.Join("", "var evt  = document.createEvent(", ToScript(eventType), "`);"));
             foreach (var otherArgs in otherArgsList)
-                p.On(string.Join("", "evt.init" + eventType + "(", CreateString(eventName), ", true, true" + (otherArgs.Length > 1 ? ", " + string.Join(", ", otherArgs) : "") + ");"));
+                p.With(string.Join("", "evt.init" + eventType + "(", ToScript(eventName), ", true, true" + (otherArgs.Length > 1 ? ", " + string.Join(", ", otherArgs) : "") + ");"));
             return p;
         }
 
+        public virtual PointerJS NodeName() => With(".nodeName");
+        public virtual PointerJS NodeType() => With(".nodeType");
+        public virtual PointerJS NodeValue() => With(".nodeValue");
+        public virtual PointerJS NextNode() => With(".nextSibling");
+        public virtual PointerJS PreviousNode() => With(".previousSibling");
+        public virtual PointerJS ParentNode() => With(".parentNode");
+        public virtual PointerJS NormalizeNode() => With(".normalize()");
+        public virtual PointerJS CloneNode(bool withChildren = true) => With(".cloneNode(" + (withChildren + "").ToLower() + ")");
 
-        public virtual PointerJS NodeName() => On(".nodeName");
-        public virtual PointerJS NodeType() => On(".nodeType");
-        public virtual PointerJS NodeValue() => On(".nodeValue");
-        public virtual PointerJS NextNode() => On(".nextSibling");
-        public virtual PointerJS PreviousNode() => On(".previousSibling");
-        public virtual PointerJS ParentNode() => On(".parentNode");
-        public virtual PointerJS NormalizeNode() => On(".normalize()");
-        public virtual PointerJS CloneNode(bool withChildren = true) => On(".cloneNode(" + (withChildren + "").ToLower() + ")");
 
-
-        public virtual PointerJS Replace(PointerJS pointer) => Parent().On(".replaceChild(" + pointer.ToString() + ","+ToString()+")");
-        public virtual PointerJS Remove() => On(".remove()");
-        public virtual PointerJS Closest(string query) => On(".closest(" + CreateString(query) + ")");
-        public virtual PointerJS Matches(string query) => On(".matches(" + CreateString(query) + ")");
-        public virtual PointerJS Next() => On(".nextElementSibling");
-        public virtual PointerJS Previous() => On(".previousElementSibling");
-        public virtual PointerJS Parent() => On(".parentElement");
-        public virtual PointerJS Children() => On(".children");
-        public virtual PointerJS Child(int index) => Children().On("[" + index + "]");
+        public virtual PointerJS Replace(PointerJS pointer) => Parent().With(".replaceChild(" + (pointer == null ? ToScript(null) : pointer.ToString()) + ","+ToString()+")");
+        public virtual PointerJS Remove() => With(".remove()");
+        public virtual PointerJS Closest(string query) => With(".closest(" + ToScript(query) + ")");
+        public virtual PointerJS Matches(string query) => With(".matches(" + ToScript(query) + ")");
+        public virtual PointerJS Next() => With(".nextElementSibling");
+        public virtual PointerJS Previous() => With(".previousElementSibling");
+        public virtual PointerJS Parent() => With(".parentElement");
+        public virtual PointerJS Children() => With(".children");
+        public virtual PointerJS Child(int index) => Children().With("[" + index + "]");
+        public virtual PointerJS Child(params int[] indeces) => Children().With("[" + string.Join("].children[", indeces) + "]");
 
         public virtual PointerJS this[int index] { get => Get(index); set => Set(index,value); }
         public virtual PointerJS this[string name] { get => Get(name); set => Set(name, value); }
 
+        public virtual PointerJS Get(int index) => With("[" + index + "]");
+        public virtual PointerJS Get(params int[] indeces) => With("[" + string.Join("][", indeces) + "]");
+        public virtual PointerJS Get(string name) => With("[" + ToScript(name) + "]");
+        public virtual PointerJS Set(PointerJS pointer) => With("=" + (pointer == null ? ToScript(null) : pointer.ToString()));
         public virtual PointerJS Get() => new PointerJS(this);
-        public virtual PointerJS Get(int index) => On("[" + index + "]");
-        public virtual PointerJS Get(string name) => On("[" + CreateString(name) + "]");
-        public virtual PointerJS Set(PointerJS pointer) => On(" = " + pointer.ToString());
-        public virtual PointerJS Set(string value) => On(" = " + CreateString(value));
-        public virtual PointerJS Set(object value) => On(" = " + (value is string ? CreateString(value) : value + ""));
-        public PointerJS Set(int index, PointerJS pointer) => Get(index).Set(pointer);
-        public PointerJS Set(string name, PointerJS pointer) => Get(name).Set(pointer);
-        public PointerJS Set(int index, string value) => Get(index).Set(value);
-        public PointerJS Set(string name, string value) => Get(name).Set(value);
-        public PointerJS Set(int index, object value) => Get(index).Set(value);
-        public PointerJS Set(string name, object value) => Get(name).Set(value);
 
-        public virtual PointerJS GetParent() => On(".parentElement");
+        public virtual PointerJS Set(object value) => Set(ToScript(value));
+        public virtual PointerJS Set(string code) => With("=" + code);
+        public virtual PointerJS Set(int index, PointerJS pointer) => Get(index).Set(pointer);
+        public virtual PointerJS Set(int[] indeces, PointerJS pointer) => Get(indeces).Set(pointer);
+        public virtual PointerJS Set(string name, PointerJS pointer) => Get(name).Set(pointer);
+        public virtual PointerJS Set(int index, object value) => Get(index).Set(value);
+        public virtual PointerJS Set(int[] indeces, object value) => Get(indeces).Set(value);
+        public virtual PointerJS Set(string name, object value) => Get(name).Set(value);
+
+        public virtual PointerJS GetParent() => With(".parentElement");
         public virtual PointerJS SetParent(PointerJS pointer) => GetParent().Set(pointer);
         public virtual PointerJS GetChild(int index) => Children().Get(index);
         public virtual PointerJS SetChild(int index,PointerJS pointer) => GetChild(index).Set(pointer);
-        public virtual PointerJS ReplaceChild(int index,PointerJS pointer) => As("element", "element.replaceChild("+pointer.ToString()+",element.children[" + index + "])");
-        public virtual PointerJS RemoveChild(PointerJS pointer) => On(".removeChild("+ pointer.ToString() + ")");
+        public virtual PointerJS ReplaceChild(int index,PointerJS pointer) => As("element", "element.replaceChild("+(pointer == null ? ToScript(null) : pointer.ToString())+",element.children[" + index + "])");
+        public virtual PointerJS RemoveChild(PointerJS pointer) => With(".removeChild("+ (pointer == null ? ToScript(null) : pointer.ToString()) + ")");
         public virtual PointerJS RemoveChild(int index) => As("element", "element.removeChild(element.children[" + index + "])");
-        public virtual PointerJS HasChild() => On(".hasChildNodes()");
-        public virtual PointerJS HasChild(PointerJS pointer) => On(".contains(" + pointer.ToString() + ")");
-        public virtual PointerJS HasChild(int index) => Children().On(".length>"+ index);
-        public virtual PointerJS GetAttribute(string name) => On(".getAttribute("+ CreateString(name) +")");
-        public virtual PointerJS SetAttribute(string name, string value) => On(".setAttribute(" + CreateString(name) +","+ CreateString(value) +")");
-        public virtual PointerJS RemoveAttribute(string name) => On(".removeAttribute(" + CreateString(name) +")");
-        public virtual PointerJS HasAttribute(string attributeName) => On(".hasAttribute(" + CreateString(attributeName) + ")");
-        public virtual PointerJS HasAttribute() => On(".hasAttributes()");
-        public virtual PointerJS GetId() => On(".id");
+        public virtual PointerJS HasChild() => With(".hasChildNodes()");
+        public virtual PointerJS HasChild(PointerJS pointer) => With(".contains(" + (pointer == null ? ToScript(null) : pointer.ToString()) + ")");
+        public virtual PointerJS HasChild(int index) => Children().With(".length>"+ index);
+        public virtual PointerJS GetAttribute(string name) => With(".getAttribute("+ ToScript(name) +")");
+        public virtual PointerJS SetAttribute(string name, object value) => With(".setAttribute(" + ToScript(name) +","+ ToScript(value) + ")");
+        public virtual PointerJS RemoveAttribute(string name) => With(".removeAttribute(" + ToScript(name) +")");
+        public virtual PointerJS HasAttribute(string name) => With(".hasAttribute(" + ToScript(name) + ")");
+        public virtual PointerJS HasAttribute() => With(".hasAttributes()");
+        public virtual PointerJS GetId() => With(".id");
         public virtual PointerJS SetId(string value) => GetId().Set(value);
         public virtual PointerJS GetName() => GetAttribute("name");
-        public virtual PointerJS SetName(string value) => SetAttribute("name", value);
-        public virtual PointerJS GetTitle() => On(".title");
-        public virtual PointerJS SetTitle(string value) => GetTitle().Set(value);
-        public virtual PointerJS GetContent() => On(".textContent");
-        public virtual PointerJS SetContent(string text) => GetContent().Set(text);
-        public virtual PointerJS GetText() => On(".innerText");
-        public virtual PointerJS SetText(string text) => GetText().Set(text);
+        public virtual PointerJS SetName(object value) => SetAttribute("name", value);
+        public virtual PointerJS GetTitle() => With(".title");
+        public virtual PointerJS SetTitle(object value) => SetAttribute("title", value);
+        public virtual PointerJS GetContent() => With(".textContent");
+        public virtual PointerJS SetContent(object value) => GetContent().Set(value);
+        public virtual PointerJS GetText() => With(".innerText");
+        public virtual PointerJS SetText(object value) => GetText().Set(value);
         public virtual PointerJS GetValue() => As("elem","elem.value??elem.innerText");
-        public virtual PointerJS SetValue(string value) => As("elem", "{try{elem.value = " + CreateString(value) + ";}catch{elem.innerText = "+ CreateString(value) +";}}");
-        public virtual PointerJS GetInnerHTML() => On(".innerHTML");
-        public virtual PointerJS SetInnerHTML(string html) => GetInnerHTML().Set(html);
-        public virtual PointerJS GetOuterHTML() => On(".outerHTML");
-        public virtual PointerJS SetOuterHTML(string html) => GetOuterHTML().Set(html);
+        public virtual PointerJS SetValue(object value) => As("elem", "{try{elem.value = " + ToScript(value) + ";}catch{elem.innerText = "+ ToScript(value) +";}}");
+        public virtual PointerJS GetInnerHTML() => With(".innerHTML");
+        public virtual PointerJS SetInnerHTML(object html) => GetInnerHTML().Set(html);
+        public virtual PointerJS GetOuterHTML() => With(".outerHTML");
+        public virtual PointerJS SetOuterHTML(object html) => GetOuterHTML().Set(html);
         public virtual PointerJS GetStyle() => Format("window.getComputedStyle({0})");
-        public virtual PointerJS SetStyle(string style) => On(".style = " + style);
-        public virtual PointerJS GetStyle(string property) => On(".style."+ ConvertService.ToConcatedName(property.ToLower()));
+        public virtual PointerJS SetStyle(object style) => With(".style").Set(style);
+        public virtual PointerJS GetStyle(string property) => With(".style."+ ConvertService.ToConcatedName(property.ToLower()));
         public virtual PointerJS SetStyle(string property, object value) => GetStyle(property).Set(value);
-        public virtual PointerJS GetShadowRoot() => On(".shadowRoot");
-        public virtual PointerJS SetShadowRoot(string mode="closed") => Format(".attachShadow({{mode:{1}}})", CreateString(mode));
+        public virtual PointerJS GetShadowRoot() => With(".shadowRoot");
+        public virtual PointerJS SetShadowRoot(string mode="closed") => Format(".attachShadow({{mode:{1}}})", ToScript(mode));
 
 
-        public virtual string CreateString(object value = null) => value == null? "null": string.Join("","`", (value+"").Replace("`","\\`"), "`");
 
         public override string ToString()
         {
-            if (Multiple) return string.Join("",
+            if (_Multiple) return string.Join("",
                 "Array.from((function*(elements) { for(let element of elements) yield (()=>",
-                    string.IsNullOrWhiteSpace(Script)? "element": Script,
+                    string.IsNullOrWhiteSpace(Script) ? "element" : Script,
                 ")()})(", ElementsPointer(), "))"
             );
-            else return string.IsNullOrWhiteSpace(Script) ?ElementPointer() : Script;
+            else return string.IsNullOrWhiteSpace(Script) ? ElementPointer() : Script;
         }
+        public virtual string ToScript() =>
+            (Sequence == null ? "" : Sequence.ToScript()) +
+            (Source == null ? "" : (Source._Multiple ? Source.ElementsPointer() : Source.ElementPointer())) + ToString();
+       
+        public static string ToScript(object value) =>
+            value == null ? "null" :
+            value is string ? string.Join("", "`", (value + "").Replace("`", "\\`"), "`") :
+            value is bool ? value.ToString().ToLower() :
+            value is IEnumerable ? "[" + string.Join(",", Statement.Loop((IEnumerable)value, (v) => ToScript(v))) + "]" :
+            value + "";
 
         public IEnumerator<PointerJS> GetEnumerator()
         {

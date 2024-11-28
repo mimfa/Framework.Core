@@ -53,15 +53,15 @@ namespace MiMFa.Model
             }
         }
 
-        public override SmartList<T>[] AddArray(params SmartList<T>[] array)
+        public override SmartList<T>[] AddRange(params SmartList<T>[] array)
         {
-            AddRange(array);
+            AddRange((IEnumerable<SmartList<T>>)array);
             return array;
         }
         public virtual void AddY(params T[] array)
         {
             var l = new SmartList<T>();
-            l.AddRange(array);
+            l.AddRange((IEnumerable<T>)array);
             this.Add(l);
         }
         public virtual void AddY() => this.Add(new SmartList<T>());
@@ -76,6 +76,6 @@ namespace MiMFa.Model
             for (int i = 0; i < Count; i++)
                 this[i].Add(defval);
         }
-        public virtual void AddYVal(params T[] values)=>this.Last().AddRange(values);
+        public virtual void AddYVal(params T[] values)=>this.Last().AddRange((IEnumerable<T>)values);
     }
 }

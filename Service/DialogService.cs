@@ -108,14 +108,6 @@ namespace MiMFa.Service
         }
 
 
-        public static string Prompt(string message, string defaultValue="")
-        {
-            return GetMessage(message,defaultValue, true);
-        }
-        public static string Prompt(string messageFormat, params object[] objs)
-        {
-            return Prompt(string.Format(messageFormat,objs));
-        }
         public static bool Warn(string message)
         {
             return ShowMessage(MessageMode.Warning, true, message) == DialogResult.Yes;
@@ -143,6 +135,22 @@ namespace MiMFa.Service
         public static bool Alert(Exception ex)
         {
             return ShowMessage(ex) == DialogResult.OK;
+        }
+        public static string Prompt(string message, string defaultValue = "")
+        {
+            return GetMessage(message, defaultValue, true);
+        }
+        public static string Prompt(string messageFormat, params object[] objs)
+        {
+            return Prompt(string.Format(messageFormat, objs));
+        }
+        public static string Choice(string message, string defaultValue = "", params string[] options)
+        {
+            return GetMessage(message, defaultValue, true, options);
+        }
+        public static string Choice(string messageFormat, string[] options, params object[] objs)
+        {
+            return Choice(string.Format(messageFormat, objs),"", options);
         }
 
 
@@ -210,19 +218,19 @@ namespace MiMFa.Service
                 default: return ShowMessage("", MessageMode.Null, translate, message);
             }
         }
-        public static DialogResult ShowMessage(MessageMode messageType, params string[] messages)
+        public static DialogResult ShowMessage(MessageMode messageType, params string[] keys)
         {
-            return ShowMessage(messageType, true, messages);
+            return ShowMessage(messageType, true, keys);
         }
         public static DialogResult ShowMessage(MessageMode messageType, string message, bool translate)
         {
             return ShowMessage(messageType == MessageMode.Null ? "" : messageType + "", messageType, translate, message);
         }
-        public static DialogResult ShowMessage(MessageMode messageType, bool translate, params string[] messages)
+        public static DialogResult ShowMessage(MessageMode messageType, bool translate, params string[] keys)
         {
-           return  ShowMessage(messageType== MessageMode.Null?"": messageType + "", messageType, translate, messages);
+           return  ShowMessage(messageType== MessageMode.Null?"": messageType + "", messageType, translate, keys);
         }
-        public static DialogResult ShowMessage(string caption, MessageMode messageType, bool translate, params string[] messages)
+        public static DialogResult ShowMessage(string caption, MessageMode messageType, bool translate, params string[] keys)
         {
             try
             {
@@ -231,26 +239,39 @@ namespace MiMFa.Service
                 switch (Mode)
                 {
                     case DialogMode.Console:
-                        return ShowConsoleMessage(caption, translate, messageType, messages);
+                        return ShowConsoleMessage(caption, translate, messageType, keys);
                     case DialogMode.Classic:
-                        return ShowClassicMessage(caption, translate, messageType, messages);
+                        return ShowClassicMessage(caption, translate, messageType, keys);
                     case DialogMode.Circle:
-                        return ShowCircleMessage(caption, translate, messageType, messages);
+                        return ShowCircleMessage(caption, translate, messageType, keys);
                     default:
-                        return ShowModernMessage(caption, translate, messageType, messages);
+                        return ShowModernMessage(caption, translate, messageType, keys);
                 }
             }
             finally { IsShow = false; }
         }
+
         public static string GetMessage(string message, string defaultValue = "", bool translate = true)
         {
-            return GetMessage("",defaultValue, MessageMode.Null, translate, message);
+            return GetMessage("", defaultValue, MessageMode.Null, translate, new string[] { message });
         }
         public static string GetMessage(string defaultValue, MessageMode messageType, bool translate, string[] keys)
         {
             return GetMessage(messageType + "", defaultValue, messageType, translate, keys);
         }
-        public static string GetMessage(string caption, string defaultValue,MessageMode messageType, bool translate, params string[] keys)
+        public static string GetMessage(string message, string defaultValue, bool translate, string[] options)
+        {
+            return GetMessage("", defaultValue, MessageMode.Null, translate, new string[] { message }, options);
+        }
+        public static string GetMessage(string defaultValue, MessageMode messageType, bool translate, string[] keys, params string[] options)
+        {
+            return GetMessage(messageType + "", defaultValue, messageType, translate, keys, options);
+        }
+        public static string GetMessage(string caption, string defaultValue, MessageMode messageType, bool translate, params string[] keys)
+        {
+            return GetMessage(caption, defaultValue, messageType, translate, keys, new string[0]);
+        }
+        public static string GetMessage(string caption, string defaultValue, MessageMode messageType, bool translate, string[] keys, params string[] options)
         {
             try
             {
@@ -258,19 +279,19 @@ namespace MiMFa.Service
                 switch (Mode)
                 {
                     case DialogMode.Console:
-                        return GetConsoleMessage(caption, defaultValue, translate, messageType, keys);
+                        return GetConsoleMessage(caption, defaultValue, translate, messageType, keys, options);
                     case DialogMode.Classic:
-                        return GetClassicMessage(caption, defaultValue, translate, messageType, keys);
+                        return GetClassicMessage(caption, defaultValue, translate, messageType, keys, options);
                     case DialogMode.Circle:
-                        return GetCircleMessage(caption, defaultValue, translate, messageType, keys);
+                        return GetCircleMessage(caption, defaultValue, translate, messageType, keys, options);
                     default:
-                        return GetModernMessage(caption, defaultValue, translate, messageType, keys);
+                        return GetModernMessage(caption, defaultValue, translate, messageType, keys, options);
                 }
             }
             finally { IsShow = false; }
         }
 
-        public static DialogResult ShowConsoleMessage(string caption, bool translate, MessageMode messageType, params string[] keys)
+        public static DialogResult ShowConsoleMessage(string caption, bool translate, MessageMode messageType, string[] keys)
         {
             string msg = (translate) ? Default.Translator.Get(keys) : CollectionService.GetAllItems(keys, " ");
             Mode = DialogMode.Console;
@@ -307,13 +328,19 @@ namespace MiMFa.Service
                 Console.ReadLine();
             }
         }
-        public static string GetConsoleMessage(string caption, string defaultValue, bool translate, MessageMode messageType, params string[] keys)
+        public static string GetConsoleMessage(string caption, string defaultValue, bool translate, MessageMode messageType, string[] keys, params string[] options)
         {
             string msg = (translate) ? Default.Translator.Get(keys) : CollectionService.GetAllItems(keys, " ");
             Mode = DialogMode.Console;
             string cap = (translate) ? Default.Translator.Get(caption) : caption;
+            if (options.Length >0) 
+            { 
+                string premsges = cap + " >> " + string.Join(", ", (translate) ? from o in options select Default.Translator.Get(o) : from o in options select o);
+                Console.WriteLine(premsges);
+            }
             string msges = cap + " >> " + msg;
-            Console.Write(msges);
+            Console.WriteLine(msges);
+            if(!string.IsNullOrWhiteSpace(defaultValue)) Console.Write(((translate) ? Default.Translator.Get(defaultValue) : defaultValue));
             try
             {
                 switch (messageType)
@@ -323,11 +350,17 @@ namespace MiMFa.Service
                     case MessageMode.Error:
                         return Console.ReadLine();
                     case MessageMode.Question:
+                        msg = Console.ReadLine();
                         Console.Write(" (Yes:Y, No:N, Cancel:C)? ");
-                        return Console.ReadLine();
+                        cap = Console.ReadLine();
+                        if (cap.ToLower() == "y") return msg;
+                        return null;
                     case MessageMode.Warning:
+                        msg = Console.ReadLine();
                         Console.Write(" (Yes:Y, No:N)? ");
-                        return Console.ReadLine();
+                        cap = Console.ReadLine();
+                        if (cap.ToLower() == "y") return msg;
+                        return null;
                     default:
                         return Console.ReadLine();
                 }
@@ -338,7 +371,7 @@ namespace MiMFa.Service
             }
         }
 
-        public static DialogResult ShowClassicMessage(string caption,bool translate,MessageMode messageType, params string[] keys)
+        public static DialogResult ShowClassicMessage(string caption,bool translate,MessageMode messageType, string[] keys)
         {
             string msg = (Default.HasTranslator && translate) ? Default.Translator.Get(keys) : CollectionService.GetAllItems(keys, " ",0,-1);
             Mode = DialogMode.Classic;
@@ -437,7 +470,7 @@ namespace MiMFa.Service
                             );
                 }
         }
-        public static string GetClassicMessage(string caption, string defaultValue, bool translate, MessageMode messageType, params string[] keys)
+        public static string GetClassicMessage(string caption, string defaultValue, bool translate, MessageMode messageType, string[] keys, params string[] options)
         {
            var LastDialog = new ModernDialog();
             Mode = DialogMode.Classic;
@@ -451,7 +484,8 @@ namespace MiMFa.Service
                      messageType,
                      MessageBoxDefaultButton.Button1,
                      MessageBoxOptions.RtlReading,
-                     defaultValue
+                     defaultValue,
+                     options
                      );
             else
                 return LastDialog.GetDialog(
@@ -461,11 +495,12 @@ namespace MiMFa.Service
                      messageType,
                      MessageBoxDefaultButton.Button1,
                      MessageBoxOptions.DefaultDesktopOnly,
-                     defaultValue
+                     defaultValue,
+                     options
                      );
         }
 
-        public static DialogResult ShowModernMessage(string caption, bool translate, MessageMode messageType, params string[] keys)
+        public static DialogResult ShowModernMessage(string caption, bool translate, MessageMode messageType, string[] keys)
         {
             var LastDialog = new ModernDialog();
             if (LastDialog is Form && ((Form)LastDialog).Visible)
@@ -570,7 +605,7 @@ namespace MiMFa.Service
                             );
                 }
         }
-        public static string GetModernMessage(string caption, string defaultValue, bool translate, MessageMode messageType, params string[] keys)
+        public static string GetModernMessage(string caption, string defaultValue, bool translate, MessageMode messageType, string[] keys, params string[] options)
         {
             var LastDialog = new ModernDialog();
             if (LastDialog is Form && ((Form)LastDialog).Visible)
@@ -589,7 +624,8 @@ namespace MiMFa.Service
                      messageType,
                      MessageBoxDefaultButton.Button1,
                      MessageBoxOptions.RtlReading,
-                     defaultValue
+                     defaultValue,
+                     options
                      );
             else
                 return LastDialog.GetDialog(
@@ -599,11 +635,12 @@ namespace MiMFa.Service
                      messageType,
                      MessageBoxDefaultButton.Button1,
                      MessageBoxOptions.DefaultDesktopOnly,
-                     defaultValue
+                     defaultValue,
+                     options
                      );
         }
 
-        public static DialogResult ShowCircleMessage(string caption, bool translate, MessageMode messageType, params string[] keys)
+        public static DialogResult ShowCircleMessage(string caption, bool translate, MessageMode messageType, string[] keys, params string[] options)
         {
             var LastDialog = new CircleDialog();
             if (LastDialog is Form && ((Form)LastDialog).Visible)
@@ -708,7 +745,7 @@ namespace MiMFa.Service
                             );
                 }
         }
-        public static string GetCircleMessage(string caption, string defaultValue, bool translate, MessageMode messageType, params string[] keys)
+        public static string GetCircleMessage(string caption, string defaultValue, bool translate, MessageMode messageType, string[] keys, params string[] options)
         {
             var LastDialog = new CircleDialog();
             if (LastDialog is Form && ((Form)LastDialog).Visible)
@@ -727,7 +764,8 @@ namespace MiMFa.Service
                      messageType,
                      MessageBoxDefaultButton.Button1,
                      MessageBoxOptions.RtlReading,
-                     defaultValue
+                     defaultValue,
+                     options
                      );
             else
                 return LastDialog.GetDialog(
@@ -737,7 +775,8 @@ namespace MiMFa.Service
                      messageType,
                      MessageBoxDefaultButton.Button1,
                      MessageBoxOptions.DefaultDesktopOnly,
-                     defaultValue
+                     defaultValue,
+                     options
                      );
         }
    

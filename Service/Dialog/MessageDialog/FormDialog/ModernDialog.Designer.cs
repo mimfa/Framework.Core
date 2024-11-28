@@ -108,13 +108,11 @@
             // 
             // TextResult
             // 
-            this.TextResult.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.TextResult.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.TextResult.Location = new System.Drawing.Point(5, 5);
             this.TextResult.Name = "TextResult";
             this.TextResult.Size = new System.Drawing.Size(370, 15);
             this.TextResult.TabIndex = 6;
-            this.TextResult.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             this.TextResult.KeyUp += new System.Windows.Forms.KeyEventHandler(this.TextResult_KeyUp);
             // 
             // tableLayoutPanel2
@@ -304,7 +302,7 @@
         private System.Windows.Forms.PictureBox pb_Icon;
         private System.Windows.Forms.Label l_Subject;
         private System.Windows.Forms.Panel p_TR;
-        public System.Windows.Forms.TextBox TextResult;
+        public System.Windows.Forms.Control TextResult;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.CheckBox cb_AgainShow;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;

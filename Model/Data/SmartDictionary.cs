@@ -267,10 +267,10 @@ namespace MiMFa.Model
             Add(kvp.Key,kvp.Value);
         }
 
-        public virtual bool ContainsValue(F value)
-        {
-            return this.Values.Contains(value);
-        }
+        //public virtual bool ContainsValue(F value)
+        //{
+        //    return this.Values.Contains(value);
+        //}
 
         public virtual bool FindKey(F value, out T key)
         {

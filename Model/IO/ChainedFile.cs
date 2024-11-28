@@ -421,6 +421,7 @@ namespace MiMFa.Model.IO
         public long PieceWarpsCount { get; private set; } = 0;
         public long LastPieceWarpsCount { get; private set; } = 0;
         public long WarpsCount => (from v in GetChain() select v.PieceWarpsCount).Max();
+
         public long LastWarpsCount => (from v in GetChain() select v.LastPieceWarpsCount).Max();
 
         public bool IsCountingPiece { get; private set; } = false;
@@ -998,6 +999,10 @@ namespace MiMFa.Model.IO
                     if (result.ContainsKey(",")) result[","] *= 999;
                     else result.Add(",", 9999);
                     break;
+                case ".ssv":
+                    if (result.ContainsKey(";")) result[";"] *= 999;
+                    else result.Add(";", 9999);
+                    break;
                 case ".tsv":
                     if (result.ContainsKey("\t")) result["\t"] *= 999;
                     else result.Add("\t", 9999);
@@ -1016,6 +1021,23 @@ namespace MiMFa.Model.IO
             result.Add("\r", 2);
             return result.OrderByDescending(kvp => kvp.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         }
+
+
+        public static bool IsCapturable(string path)
+        {
+            string ext = System.IO.Path.GetExtension(path);
+            switch (ext)
+            {
+                case ".txt":
+                case ".tsv":
+                case ".csv":
+                case ".ssv":
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         #endregion
 
 

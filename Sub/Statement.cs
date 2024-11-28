@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections;
 
 namespace MiMFa
 {
@@ -50,6 +51,11 @@ namespace MiMFa
             Thread.Sleep(timeout);
         }
       
+        public static IEnumerable<object> Loop(IEnumerable collection, Func<object, object> action)
+        {
+            foreach (var item in collection)
+                yield return action(item);
+        }
         public static IEnumerable<TOut> Loop<TIn, TOut>(IEnumerable<TIn> collection, Func<TIn,TOut> action)
         {
             foreach (var item in collection)
