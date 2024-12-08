@@ -713,7 +713,7 @@ namespace MiMFa.Service
                 }
             return string.Join("", stra);
         }
-        public static string ToConcatedName(string name, bool justASCIIAlfabet = true)
+        public static string ToConcatedName(string name, bool justASCIIAlfabet = true, string splitter = "")
         {
             if (name == null) return "";
             if (justASCIIAlfabet)
@@ -725,10 +725,10 @@ namespace MiMFa.Service
                     else nn += " ";
                 name = nn;
             }
-            string[] stra = name.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
-            return ToConcatedName(stra);
-        }
-        public static string ToConcatedName(params string[] parts)=>parts[0] + string.Join("", from v in parts.Skip(1) select StringService.CapitalFirstLetter(v));
+            return ToConcatedName(splitter, Regex.Split(name, "\\s+"));
+        }        
+        public static string ToConcatedName(string splitter, string[] parts)=>parts.FirstOrDefault() + string.Join(splitter, from v in parts.Skip(1) select StringService.CapitalFirstLetter(v));
+        public static string ToConcatedName(params string[] parts)=> ToConcatedName("", parts);
         public static string ToAlphabetCharacters(string name, string alter = " ")
         {
             if (name == null) return "";
@@ -901,10 +901,10 @@ namespace MiMFa.Service
             return sb.ToString();
         }
 
-        public static string ToVariableName(string name)
+        public static string ToVariableName(string name, string splitter = "")
         {
             if (string.IsNullOrEmpty(name)) return "";
-            return ToConcatedName(Regex.Replace(name, "^([\\W\\d]+)|\\W+", " ").Trim(), true);
+            return ToConcatedName(Regex.Replace(name, "(^[\\W\\d]+)|\\W+", " ").Trim(), true, splitter);
         }
         public static string ToAlphabeticName(string name)
         {

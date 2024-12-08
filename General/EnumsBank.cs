@@ -1091,5 +1091,15 @@ namespace MiMFa.General
         Modify = 1,
         Delete = 2
     }
+
+    public enum StandardTypes
+    {
+        C,
+        Java,
+        MSSQL,
+        MySQL,
+        SQLite,
+        PostgreSQL
+    }
     #endregion
 }

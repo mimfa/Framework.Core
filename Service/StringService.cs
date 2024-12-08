@@ -68,7 +68,8 @@ namespace MiMFa.Service
 
         public static string Compress(string text,int maxlength= 20,string pressedsign = "⋯",bool reverse = false)
         {
-            if (string.IsNullOrEmpty(text)) return text;
+            if (maxlength == 0) return "";
+            if (string.IsNullOrEmpty(text) || maxlength < 0) return text;
             text = text.Trim();
             if (text.Length <= maxlength) return text;
             if(reverse) return pressedsign + text.Substring(maxlength - pressedsign.Length);
@@ -344,7 +345,7 @@ namespace MiMFa.Service
             return intoText;
         }
 
-        public static object CapitalFirstLetter(string word) => word[0].ToString().ToUpper() + string.Join("", word.Skip(1)).ToLower();
+        public static object CapitalFirstLetter(string word) => string.IsNullOrEmpty(word)? word: word.First().ToString().ToUpper() + string.Join("", word.Skip(1)).ToLower();
         public static string ToSeparatedWords(string cancatedString)
         {
 

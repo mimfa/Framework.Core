@@ -107,6 +107,16 @@ namespace MiMFa.Service
             return true;
         }
         private static List<char> IsWordList = null;
+        /// <summary>
+        /// check if the sample text is in the encoding scope
+        /// </summary>
+        /// <param name="text">a sample text</param>
+        /// <param name="maxCode">For example: Minimum code for Ansi is 255</param>
+        /// <returns></returns>
+        public static bool IsEncodingScope(string text, int maxCode = 255)
+        {
+            return !(text??"").Any(c => c > maxCode);
+        }
 
         public static bool IsHTMLContent(object value)
         {
@@ -708,6 +718,7 @@ namespace MiMFa.Service
             return NetService.GetMACs();
 
         }
+
 
         #endregion
 

@@ -122,7 +122,7 @@ namespace MiMFa.Model.IO
         {
             if (changeNum != 0)
             {
-                LastPieceColumnsLabels = null;
+                LastPieceColumnsLabelsTypes = null;
                 LastPieceRowsLabels = null;
             }
             IsPieceChanged = true;//IsChanged || ChangesBuffer.Count > 0 || changeNum != 0;
@@ -151,7 +151,7 @@ namespace MiMFa.Model.IO
             LinesChanged(this, changeNum);
             OnActed("LinesChanged");
             OnChanged(changeNum);
-            return LinesCounted(this, PieceLinesCount = LastPieceLinesCount += changeNum);
+            return LinesCounted(this, LastPieceLinesCount += changeNum);
         }
         public void SetWarpsChanged(ChainedFileCountHandler eventHandler)
         {
@@ -167,7 +167,7 @@ namespace MiMFa.Model.IO
             WarpsChanged(this, changeNum);
             OnActed("WarpsChanged");
             OnChanged(changeNum);
-            return WarpsCounted(this, PieceWarpsCount = LastPieceWarpsCount += changeNum);
+            return WarpsCounted(this, LastPieceWarpsCount += changeNum);
         }
         public void SetPieceLinesCounting(ChainedFileCountHandler eventHandler)
         {
@@ -181,7 +181,7 @@ namespace MiMFa.Model.IO
         public bool OnPieceLinesCounted(long count)
         {
             IsCountingPiece = false;
-            return IsCountedPiece = PieceLinesCounted(this, PieceLinesCount = LastPieceLinesCount = count);
+            return IsCountedPiece = PieceLinesCounted(this, LastPieceLinesCount = count);
         }
         public void SetLinesCounting(ChainedFileCountHandler eventHandler)
         {
@@ -204,7 +204,7 @@ namespace MiMFa.Model.IO
         }
         public bool OnWarpsCounting(long count)
         {
-            PieceWarpsCount = LastPieceWarpsCount = Math.Max(LastPieceWarpsCount, count);
+            LastPieceWarpsCount = Math.Max(LastPieceWarpsCount, count);
             return WarpsCounting(this, count);
         }
         public void SetPathChanged(ChainedFileHandler eventHandler)
@@ -396,7 +396,12 @@ namespace MiMFa.Model.IO
 
 
         #region LINES
-        public long PieceLinesCount { get; private set; } = 0;
+        public long PieceLinesCount { get
+            {
+                if (!IsCountedPiece) PieceCount();
+                return LastPieceLinesCount;
+            } set => LastPieceLinesCount = value;
+        }
         public long LastPieceLinesCount { get; private set; } = 0;
         public long LinesCount => BackSequenceLinesCount + PieceLinesCount + ForeSequenceLinesCount;
         public long LastLinesCount => BackSequenceLastLinesCount + LastPieceLinesCount + ForeSequenceLastLinesCount;
@@ -418,7 +423,15 @@ namespace MiMFa.Model.IO
         public long ForeSequenceMinPieceLinesCount => HasForePiece ? ForePiece.ForeMinPieceLinesCount : 0;
         public long BackSequenceMinPieceLinesCount => HasBackPiece ? BackPiece.BackMinPieceLinesCount : 0;
 
-        public long PieceWarpsCount { get; private set; } = 0;
+        public long PieceWarpsCount
+        {
+            get
+            {
+                if (!IsCountedPiece) PieceCount();
+                return LastPieceWarpsCount;
+            }
+            set => LastPieceWarpsCount = value;
+        }
         public long LastPieceWarpsCount { get; private set; } = 0;
         public long WarpsCount => (from v in GetChain() select v.PieceWarpsCount).Max();
 
@@ -537,26 +550,22 @@ namespace MiMFa.Model.IO
             set
             {
                 if (_PieceColumnsLabelsIndex != value)
-                    LastPieceColumnsLabels = null;
+                    LastPieceColumnsLabelsTypes = null;
                 _PieceColumnsLabelsIndex = value;
             }
         }
-        public IEnumerable<string> LastPieceColumnsLabels { get; set; } = null;
         public IEnumerable<string> PieceColumnsLabels
         {
             get
             {
-                if (!IsForceColumnsLabels && LastPieceColumnsLabels != null) return LastPieceColumnsLabels;
-                IsForceColumnsLabels = false;
-                if (HasPieceColumnsLabels)
-                     LastPieceColumnsLabels = ReadRow(PieceColumnsLabelsIndex).ToList();
-                else LastPieceColumnsLabels = new List<string>();
-                return LastPieceColumnsLabels = LastPieceColumnsLabels.Concat(MiMFa.Statement.Loop(LastPieceColumnsLabels.LongCount(), PieceWarpsCount, i => default(string))).ToList();
+                if (IsForceColumnsLabels) return ForceColumnsLabels;
+                return from kv in PieceColumnsLabelsTypes select kv.Key;
             }
             set
             {
-                if (LinesCount == PieceColumnsLabelsIndex) WriteRow(LastPieceColumnsLabels = value);
-                else ChangeRow(ColumnsLabelsIndex, LastPieceColumnsLabels = value);
+                if(value == null) PieceColumnsLabelsTypes = new List<KeyValuePair<string, string>>();
+                if (LastPieceColumnsLabelsTypes == null) PieceColumnsLabelsTypes = value.Select(v => new KeyValuePair<string, string>(v, null)).ToList();
+                else PieceColumnsLabelsTypes = value.Select(v => new KeyValuePair<string, string>(v, LastPieceColumnsLabelsTypes.FirstOrDefault(kv=>kv.Key == v).Value)).ToList();
             }
         }
         public string GetPieceColumnLabel(long colIndex) => PieceColumnsLabels.ElementAtOrDefault((int)colIndex);
@@ -564,17 +573,45 @@ namespace MiMFa.Model.IO
         {
             get
             {
-                if (IsForceColumnsLabels && LastPieceColumnsLabels != null) return LastPieceColumnsLabels;
-                IsForceColumnsLabels = true;
-                if (HasPieceColumnsLabels)
-                    LastPieceColumnsLabels = ReadRow(PieceColumnsLabelsIndex).ToList();
-                else LastPieceColumnsLabels = new List<string>();
-                return LastPieceColumnsLabels = LastPieceColumnsLabels.Concat(MiMFa.Statement.Loop(LastPieceColumnsLabels.LongCount(), PieceWarpsCount, i => ConvertService.ToAlphabet(i, false))).ToList();
+                //if (IsForceColumnsLabels && LastPieceColumnsLabels != null) return LastPieceColumnsLabels;
+                //IsForceColumnsLabels = true;
+                if(LastPieceColumnsLabelsTypes == null) LastPieceColumnsLabelsTypes = new List<KeyValuePair<string, string>>();
+                if (HasPieceColumnsLabels) ReadRow(PieceColumnsLabelsIndex).Select(v => new KeyValuePair<string, string>(v, LastPieceColumnsLabelsTypes.FirstOrDefault(kv => kv.Key == v).Value)).ToList();
+                return LastPieceColumnsLabelsTypes.Concat(MiMFa.Statement.Loop(LastPieceColumnsLabelsTypes.LongCount(), PieceWarpsCount, i => new KeyValuePair<string, string>(ConvertService.ToAlphabet(i, false), null))).Select(v=>v.Key);
             }
             set => PieceColumnsLabels = value;
         }
         public string GetForcePieceColumnLabel(long colIndex) => ForcePieceColumnsLabels.ElementAtOrDefault((int)colIndex);
+        public IEnumerable<KeyValuePair<string, string>> PieceColumnsLabelsTypes
+        {
+            get
+            {
+                if (!IsPieceChanged && LastPieceColumnsLabelsTypes != null) return LastPieceColumnsLabelsTypes;
+                if (LastPieceColumnsLabelsTypes == null) LastPieceColumnsLabelsTypes = new List<KeyValuePair<string, string>>();
+                if (HasPieceColumnsLabels) LastPieceColumnsLabelsTypes = ReadRow(PieceColumnsLabelsIndex).Select(v => new KeyValuePair<string, string>(v, LastPieceColumnsLabelsTypes.FirstOrDefault(kv => kv.Key == v).Value)).ToList();
+                int c = -1;
+                return LastPieceColumnsLabelsTypes =
+                    (from kv in
+                    LastPieceColumnsLabelsTypes.Concat(MiMFa.Statement.Loop(LastPieceColumnsLabelsTypes.LongCount(), PieceWarpsCount, i => new KeyValuePair<string, string>(default(string), null)))
+                    where ++c >= 0
+                    select 
+                        new KeyValuePair<string, string>(
+                            kv.Key,
+                            kv.Value??ColumnTypeSuggest(c)
+                        )
+                    ).ToList();
 
+            }
+            set
+            {
+                if (LinesCount == PieceColumnsLabelsIndex) WriteRow(from kvp in (LastPieceColumnsLabelsTypes = value) select kvp.Key);
+                else ChangeRow(ColumnsLabelsIndex, from kvp in (LastPieceColumnsLabelsTypes = value) select kvp.Key);
+            }
+        }
+        public KeyValuePair<string, string>? GetPieceColumnLabelType(long colIndex) => PieceColumnsLabelsTypes.ElementAtOrDefault((int)colIndex);
+        public IEnumerable<KeyValuePair<string, string>> LastPieceColumnsLabelsTypes { get; set; } = null;
+        public StandardTypes TypesStandard { get; set; } = StandardTypes.MSSQL;
+       
         public bool HasColumnsLabels => ColumnsLabelsIndex > -1;
         public bool FreeColumnsLabels { get; set; } = true;
         public long ColumnsLabelsIndex
@@ -595,13 +632,23 @@ namespace MiMFa.Model.IO
                 else if (HasForePiece) ForePiece.ColumnsLabels = value;
             }
         }
-        public string GetColumnLabel(long colIndex) => HasPieceColumnsLabels ? GetColumnLabel(colIndex) : HasForePiece ? ForePiece.GetColumnLabel(colIndex) : null;
+        public string GetColumnLabel(long colIndex) => HasPieceColumnsLabels ? GetPieceColumnLabel(colIndex) : HasForePiece ? ForePiece.GetColumnLabel(colIndex) : null;
         public IEnumerable<string> ForceColumnsLabels
         {
             get => HasPieceColumnsLabels ? ForcePieceColumnsLabels : HasForePiece ? ForePiece.ForceColumnsLabels : MiMFa.Statement.Loop(0, PieceWarpsCount, i => ConvertService.ToAlphabet(i, false));
             set => ColumnsLabels = value;
         }
         public string GetForceColumnLabel(long colIndex) => HasPieceColumnsLabels ? GetForcePieceColumnLabel(colIndex) : HasForePiece ? ForePiece.GetForceColumnLabel(colIndex) : ConvertService.ToAlphabet(colIndex);
+        public IEnumerable<KeyValuePair<string, string>> ColumnsLabelsTypes
+        {
+            get => HasPieceColumnsLabels ? PieceColumnsLabelsTypes : HasForePiece ? ForePiece.ColumnsLabelsTypes : new KeyValuePair<string, string>[] { };
+            set
+            {
+                if (HasPieceColumnsLabels) PieceColumnsLabelsTypes = value;
+                else if (HasForePiece) ForePiece.ColumnsLabelsTypes = value;
+            }
+        }
+        public KeyValuePair<string, string>? GetColumnLabelType(long colIndex) => HasPieceColumnsLabels ? GetPieceColumnLabelType(colIndex) : HasForePiece ? ForePiece.GetColumnLabelType(colIndex) : null;
 
         public long GetForcePieceColumnIndex(string label, bool sense = false)
         {
@@ -690,8 +737,9 @@ namespace MiMFa.Model.IO
         {
             get
             {
-                if (!IsForceRowsLabels && LastPieceRowsLabels != null) return LastPieceRowsLabels;
-                IsForceRowsLabels = false;
+                if (IsForceRowsLabels) return ForcePieceRowsLabels;
+                else if (!IsPieceChanged && LastPieceRowsLabels != null) return LastPieceRowsLabels;
+                //IsForceRowsLabels = false;
                 if (HasPieceRowsLabels)
                     LastPieceRowsLabels = ReadColumn(PieceRowsLabelsIndex);
                 else LastPieceRowsLabels = new List<string>();
@@ -704,8 +752,8 @@ namespace MiMFa.Model.IO
         {
             get
             {
-                if (IsForceRowsLabels && LastPieceRowsLabels != null) return LastPieceRowsLabels;
-                IsForceRowsLabels = true;
+                //if (IsForceRowsLabels && LastPieceRowsLabels != null) return LastPieceRowsLabels;
+                //IsForceRowsLabels = true;
                 if (HasPieceRowsLabels)
                     LastPieceRowsLabels = ReadColumn(PieceRowsLabelsIndex);
                 else LastPieceRowsLabels = new List<string>();
@@ -914,45 +962,58 @@ namespace MiMFa.Model.IO
         {
             Dictionary<int, double> dic = new Dictionary<int, double>();
             double[][][] list = new double[sampleCells.Length][][];
-            for (int i = 0; i < sampleCells.Length; i++)
+            if (sampleCells.Length > 0)
             {
-                var cells = sampleCells[i];
-                list[i] = new double[cells.Length + 1][];
-                for (int j = 0; j < cells.Length; j++)
+                for (int i = 0; i < sampleCells.Length; i++)
                 {
-                    list[i][j] = new double[3];
-                    //Number of Characters
-                    list[i][j][0] = cells[j].Length;
-                    List<int> lasci = new List<int>();
-                    foreach (char item in cells[j])
-                        lasci.Add(item);
-                    //ASCI Codes Average
-                    list[i][j][1] = lasci.Count < 1 ? 0 : lasci.Average();
-                    //ASCI Codes STD
-                    list[i][j][2] = lasci.Count < 1 ? 0 : Math.Sqrt((from v in lasci select Math.Pow(v - list[i][j][1], 2)).Average());
-                }
-                list[i][cells.Length] = new double[3];
-                //Number of Characters
-                list[i][cells.Length][0] = (from v in list[i].Take(cells.Length) where v != null select v[0]).Average();
-                //ASCIs Codes Average
-                list[i][cells.Length][1] = (from v in list[i].Take(cells.Length) where v != null select v[1]).Average();
-                //ASCIs Codes STD
-                list[i][cells.Length][2] = Math.Sqrt((from v in list[i].Take(cells.Length) where v != null select Math.Pow(v[1] - list[i][cells.Length][1], 2)).Average());
-            }
-            var lengthAVG = (from v in list where v != null select v.Last()[0]).Average();
-            var asciAVG = (from v in list where v != null select v.Last()[1]).Average();
-            var stdAVG = (from v in list where v != null select v.Last()[2]).Average();
-            var sum = lengthAVG + asciAVG + 10 * stdAVG;
-            dic.Add(-1, minPercent);
-            if (sum > 0)
-                for (int i = 0; i < list.Length; i++)
-                    if (list[i] != null)
+                    var cells = sampleCells[i];
+                    list[i] = new double[cells.Length + 1][];
+                    for (int j = 0; j < cells.Length; j++)
                     {
-                        var l = lengthAVG - list[i].Last()[0];
-                        var a = Math.Abs(asciAVG - list[i].Last()[1]);
-                        var s = Math.Abs(stdAVG - list[i].Last()[2]);
-                        dic.Add(i, ((l + a + 10 * s) / sum) * 100);
+                        List<int> lasci = new List<int>();
+                        foreach (char item in cells[j]) lasci.Add(item);
+                        var max = lasci.Count < 1 ? 0 : lasci.Max();
+                        var avg = lasci.Count < 1 ? 0 : lasci.Average();
+
+                        list[i][j] = new double[4];
+                        //Number of Characters
+                        list[i][j][0] = cells[j].Length < 1 ? 0 : 64f / cells[j].Length;
+                        //ASCI Codes Average
+                        list[i][j][1] = lasci.Count < 1 ? 0 : lasci.Count * max * 2f / lasci.Sum();
+                        //ASCI Codes STD
+                        list[i][j][2] = lasci.Count < 1 ? 0 : Math.Sqrt((from v in lasci select Math.Pow(v == avg ? 1 : max / (v - avg), 2)).Average());
+                        //Position
+                        list[i][j][3] = sampleCells.Length/(i+1);
                     }
+                    list[i][cells.Length] = new double[5];
+                    //Number of Characters
+                    list[i][cells.Length][0] = (from v in list[i].Take(cells.Length) where v != null select v[0]).Average();
+                    //ASCIs Codes Average
+                    list[i][cells.Length][1] = (from v in list[i].Take(cells.Length) where v != null select v[1]).Average();
+                    //ASCIs Codes STD
+                    list[i][cells.Length][2] = (from v in list[i].Take(cells.Length) where v != null select v[2]).Average();
+                    //Position
+                    list[i][cells.Length][3] = (from v in list[i].Take(cells.Length) where v != null select v[3]).Average();
+                    //Is Distinct
+                    list[i][cells.Length][4] = cells.Distinct().Count() / cells.Length;
+                }
+                var len = Math.Max(1,(from v in list where v != null select v.Last()[0]).Max());
+                var asci = Math.Max(1, (from v in list where v != null select v.Last()[1]).Max());
+                var std = Math.Max(1, (from v in list where v != null select v.Last()[2]).Max());
+                var pos = Math.Max(1, (from v in list where v != null select v.Last()[3]).Max());
+                dic.Add(-1, minPercent);
+                if ((len + asci + std + pos) > 0)
+                    for (int i = 0; i < list.Length; i++)
+                        if (list[i] != null)
+                        {
+                            var l = list[i].Last()[0];
+                            var a = list[i].Last()[1];
+                            var s = list[i].Last()[2];
+                            var p = list[i].Last()[3];
+                            var m = list[i].Last()[4];
+                            dic.Add(i, ((l / len) + (a / asci) + (s / std) + (2 * p / pos)) * m * 20);
+                        }
+            }
             return dic.OrderByDescending(kvp => kvp.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         }
         public Dictionary<string, double> WarpsSplittersSuggests()
@@ -1007,7 +1068,6 @@ namespace MiMFa.Model.IO
                     if (result.ContainsKey("\t")) result["\t"] *= 999;
                     else result.Add("\t", 9999);
                     break;
-
                 default:
                     break;
             }
@@ -1022,6 +1082,199 @@ namespace MiMFa.Model.IO
             return result.OrderByDescending(kvp => kvp.Value).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         }
 
+        public IEnumerable<string> ColumnTypesSuggests() => MiMFa.Statement.Loop(WarpsCount,c=> ColumnTypeSuggest(c));
+        public string ColumnTypeSuggest(long col)
+        {
+            var samples = SampleCells(col,-1,100).ToList();
+            object type = null;
+            bool unicode = false;
+            for (int i = 0; i < samples.Count; i++)
+            {
+                if (string.IsNullOrEmpty(samples[i])) samples[i] = null;
+                else if (Regex.IsMatch(samples[i], @"^\s*([01]|true|false)\s*$", RegexOptions.IgnoreCase)) samples[i] = "bit";
+                else if (Regex.IsMatch(samples[i], @"^\s*(([0-9]{1,2})|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))\s*$")) samples[i] = "tinyint";
+                else if (Regex.IsMatch(samples[i], @"^\s*[\-\+]?\d{1,5}\s*$")) samples[i] = "smallint";
+                else if (Regex.IsMatch(samples[i], @"^\s*[\-\+]?\d{1,11}\s*$")) samples[i] = "int";
+                else if (Regex.IsMatch(samples[i], @"^\s*[\-\+]?\d{1,21}\s*$")) samples[i] = "bigint";
+                else if (Regex.IsMatch(samples[i], @"^\s*[\-\+]?\d+\.\d+(e\s*\+\s*\d+)?\s*$", RegexOptions.IgnoreCase)) samples[i] = "real";
+                else
+                {
+                    if (!unicode) unicode = !InfoService.IsEncodingScope(samples[i], 255);
+                    samples[i] = (type = samples[i].Length) + "";
+                }
+            }
+            foreach (var item in samples)
+                switch (item)
+                {
+                    case "bit":
+                        switch (TypesStandard)
+                        {
+                            case StandardTypes.Java:
+                                type = "bool";
+                                break;
+                            case StandardTypes.C:
+                                type = "bool";
+                                break;
+                            case StandardTypes.MySQL:
+                                type = "BOOL";
+                                break;
+                            case StandardTypes.SQLite:
+                            case StandardTypes.PostgreSQL:
+                                type = "BOOLEAN";
+                                break;
+                            default:
+                                if (type == null) type = item.ToUpper();
+                                break;
+                        }
+                        break;
+                    case "tinyint":
+                        switch (type)
+                        {
+                            case null:
+                            case "bit":
+                            case "tinyint":
+                                switch (TypesStandard)
+                                {
+                                    case StandardTypes.Java:
+                                        type = "int";
+                                        break;
+                                    case StandardTypes.C:
+                                        type = "short";
+                                        break;
+                                    case StandardTypes.PostgreSQL:
+                                        type = "SMALLINT";
+                                        break;
+                                    case StandardTypes.SQLite:
+                                        type = "INT";
+                                        break;
+                                    default:
+                                        type = item.ToUpper();
+                                        break;
+                                }
+                                break;
+                        }
+                        break;
+                    case "smallint":
+                        switch (type)
+                        {
+                            case null:
+                            case "bit":
+                            case "tinyint":
+                            case "smallint":
+                                switch (TypesStandard)
+                                {
+                                    case StandardTypes.Java:
+                                    case StandardTypes.C:
+                                        type = "int";
+                                        break;
+                                    case StandardTypes.SQLite:
+                                        type = "INT";
+                                        break;
+                                    default:
+                                        type = item.ToUpper();
+                                        break;
+                                }
+                                break;
+                        }
+                        break;
+                    case "int":
+                        switch (type)
+                        {
+                            case null:
+                            case "bit":
+                            case "tinyint":
+                            case "smallint":
+                            case "int":
+                                switch (TypesStandard)
+                                {
+                                    case StandardTypes.Java:
+                                    case StandardTypes.C:
+                                        type = "int";
+                                        break;
+                                    case StandardTypes.PostgreSQL:
+                                        type = "INTEGER";
+                                        break;
+                                    default:
+                                        type = item.ToUpper();
+                                        break;
+                                }
+                                break;
+                        }
+                        break;
+                    case "bigint":
+                        switch (type)
+                        {
+                            case null:
+                            case "bit":
+                            case "tinyint":
+                            case "smallint":
+                            case "int":
+                            case "bigint":
+                                switch (TypesStandard)
+                                {
+                                    case StandardTypes.Java:
+                                        type = "int";
+                                        break;
+                                    case StandardTypes.C:
+                                        type = "long";
+                                        break;
+                                    case StandardTypes.SQLite:
+                                        type = "INTEGER";
+                                        break;
+                                    default:
+                                        type = item.ToUpper();
+                                        break;
+                                }
+                                break;
+                        }
+                        break;
+                    case "real":
+                        switch (TypesStandard)
+                        {
+                            case StandardTypes.Java:
+                            case StandardTypes.C:
+                                type = "float";
+                                break;
+                            case StandardTypes.MySQL:
+                            case StandardTypes.MSSQL:
+                                type = "FLOAT";
+                                break;
+                            default:
+                                type = item.ToUpper();
+                                break;
+                        }
+                        break;
+                    default:
+                        if (type == null) type = item;
+                        break;
+                }
+            if (type is int)
+            {
+                int p = 2;
+                int t = (int)type;
+                while (p <= t && p < 536870912) p = p * p;
+                switch (TypesStandard)
+                {
+                    case StandardTypes.C:
+                    case StandardTypes.Java:
+                        type = "string";
+                        break;
+                    case StandardTypes.MSSQL:
+                        type = (unicode ? "N" : "") + (p < 536870912 ? $"VARCHAR({p})" : "TEXT");
+                        break;
+                    case StandardTypes.MySQL:
+                        type = (p < 536870912 ? $"VARCHAR({p})" : "VARCHAR");
+                        break;
+                    case StandardTypes.SQLite:
+                        type = "TEXT";
+                        break;
+                    default:
+                        type = (p < 536870912 ? $"VARCHAR({p})" : "TEXT");
+                        break;
+                }
+            }
+            return type==null?null:(type + "");
+        }
 
         public static bool IsCapturable(string path)
         {
@@ -1243,6 +1496,7 @@ namespace MiMFa.Model.IO
             TrackPiece = () => this;
             switch (Extension.ToLower())
             {
+                case ".txt":
                 case ".tsv":
                     WarpsSplitter = "\t";
                     break;
@@ -1391,6 +1645,14 @@ namespace MiMFa.Model.IO
                 }
             }
         }
+        public IEnumerable<string> this[string row]
+        {
+            get { return Row(row); }
+            set
+            {
+                ChangeRow(row, value);
+            }
+        }
         public IEnumerable<string> this[long row]
         {
             get { return Row(row); }
@@ -1399,12 +1661,60 @@ namespace MiMFa.Model.IO
                 ChangeRow(row, value);
             }
         }
+        public string this[string col, string row]
+        {
+            get { return Cell(col, row); }
+            set
+            {
+                ChangeCell(col, row, value);
+            }
+        }
+        public string this[string col, long row]
+        {
+            get { return Cell(GetColumnIndex(col), row); }
+            set
+            {
+                ChangeCell(GetColumnIndex(col), row, value);
+            }
+        }
+        public string this[long col, string row]
+        {
+            get { return Cell(col, GetRowIndex(row)); }
+            set
+            {
+                ChangeCell(col, GetRowIndex(row), value);
+            }
+        }
         public string this[long col, long row]
         {
             get { return Cell(col, row); }
             set
             {
                 ChangeCell(col, row, value);
+            }
+        }
+        public string this[long doc, string col, string row]
+        {
+            get { return Cell(col, row, doc); }
+            set
+            {
+                ChangeCell(col, row, doc, value);
+            }
+        }
+        public string this[long doc, string col, long row]
+        {
+            get { return Cell(GetColumnIndex(col), row, doc); }
+            set
+            {
+                ChangeCell(GetColumnIndex(col), row, doc, value);
+            }
+        }
+        public string this[long doc, long col, string row]
+        {
+            get { return Cell(col, GetRowIndex(row), doc); }
+            set
+            {
+                ChangeCell(col, GetRowIndex(row), doc, value);
             }
         }
         public string this[long doc, long col, long row]
@@ -1474,18 +1784,22 @@ namespace MiMFa.Model.IO
         {
             return GetPieceByIndex(index) ??d;
         }
+        public string Warp(string label) => ReadWarp(label);
         public string Warp(long index) => ReadWarp(index);
+        public string Line(string label) => ReadLine(label);
         public string Line(long index) => ReadLine(index);
+        public string Cell(string col, string row) => ReadCell(col, row);
         public string Cell(long col, long row) => ReadCell(col, row);
+        public string Cell(string col, string row, long documentIndex) => ReadCell(col, row, documentIndex);
         public string Cell(long col, long row, long documentIndex) => ReadCell(col, row, documentIndex);
         public IEnumerable<string> Column(string label, bool caseSense = false) => ReadColumn(GetColumnIndex(label, caseSense));
         public IEnumerable<string> Column(long index,long fromRowIndex) => ReadColumn(index, fromRowIndex);
         public IEnumerable<string> Column(long index) => ReadColumn(index);
-        public IEnumerable<string> Row(long index, long fromColIndex) => ReadRow(index, fromColIndex);
         public IEnumerable<string> Row(string label, bool caseSense = false) => ReadRow(GetRowIndex(label, caseSense));
+        public IEnumerable<string> Row(long index, long fromColIndex) => ReadRow(index, fromColIndex);
         public IEnumerable<string> Row(long index) => ReadRow(index);
-        public IEnumerable<KeyValuePair<string, string>> Record(long index,long fromColIndex) => ReadRecord(index, fromColIndex);
         public IEnumerable<KeyValuePair<string, string>> Record(string label, bool caseSense = false) => ReadRecord(GetRowIndex(label, caseSense));
+        public IEnumerable<KeyValuePair<string, string>> Record(long index,long fromColIndex) => ReadRecord(index, fromColIndex);
         public IEnumerable<KeyValuePair<string, string>> Record(long index) => ReadRecord(index);
         public string Text { get => ReadText(); set { Clear(); WriteText(value); Save(); } }
         public IEnumerable<string> Warps { get => ReadWarps(); set { Clear(); WriteWarps(value); Save(); } }
@@ -1520,6 +1834,7 @@ namespace MiMFa.Model.IO
             {
                 Open(file.Path);
                 if (file.HasForePiece) ForePiece = new ChainedFile(file.ForePiece);
+                LastPieceWarpsCount = file.LastPieceWarpsCount;
                 LastPieceLinesCount = file.LastPieceLinesCount;
                 LastLineIndex = file.LastLineIndex;
                 BufferStartLine = file.BufferStartLine;
@@ -1734,8 +2049,6 @@ namespace MiMFa.Model.IO
             IsPieceChanged = false;
             IsCountingPiece = false;
             IsCountedPiece = false;
-            LastPieceWarpsCount = 0;
-            LastPieceLinesCount = 0;
             PieceWarpsCount = 0;
             PieceLinesCount = 0;
             ReadsFlush();
@@ -1758,8 +2071,7 @@ namespace MiMFa.Model.IO
                 IsPieceChanged = false;
                 IsCountingPiece = false;
                 IsCountedPiece = false;
-                LastPieceWarpsCount = 0;
-                LastPieceLinesCount = 0;
+                PieceWarpsCount = 0;
                 PieceLinesCount = 0;
                 ReadsFlush();
                 PieceWritesBuffer.Clear();
@@ -1795,8 +2107,6 @@ namespace MiMFa.Model.IO
                 IsPieceChanged = false;
                 IsCountingPiece = false;
                 IsCountedPiece = false;
-                LastPieceWarpsCount = 0;
-                LastPieceLinesCount = 0;
                 PieceWarpsCount = 0;
                 PieceLinesCount = 0;
                 ReadsFlush();
@@ -1930,14 +2240,15 @@ namespace MiMFa.Model.IO
         {
             try
             {
+                if(!IsCountedPiece) PieceCount();
                 WarpsSplitters = new string[] { WarpsSplittersSuggests().First().Key };
                 LinesSplitters = new string[] { LinesSplittersSuggests().First().Key };
-                ColumnsLabelsIndex = WarpsLabelsIndexSuggests().First().Key;
-                //RowsLabelsIndex = LinesLabelsIndexSuggests().First().Key;
+                ColumnsLabelsIndex = WarpsLabelsIndexSuggests().FirstOrDefault().Key;
+                RowsLabelsIndex = LinesLabelsIndexSuggests().FirstOrDefault().Key;
                 Connector.UpdateDetectors();
                 if (HasForePiece) ForePiece.Update();
             }
-            catch { }
+            catch(Exception ex) { }
         }
         public bool Update(string warpsSeparator, string linesSeparator = "\r\n")
         {
@@ -1963,6 +2274,22 @@ namespace MiMFa.Model.IO
 
 
         #region BUFFERS
+        public bool UseBuffer
+        {
+            get => _UseBuffer; 
+            set
+            {
+                if (_UseBuffer = value)
+                {
+                    _BufferMaxLinesNumber = 100000;
+                }
+                else
+                {
+                    _BufferMaxLinesNumber = 1;
+                }
+            }
+        }
+        private bool _UseBuffer = true;
         public bool IsBuffered { get; private set; } = false;
 
         public static int BufferMaxLinesCapasity { get; set; } = 100000;
@@ -2044,8 +2371,8 @@ namespace MiMFa.Model.IO
         {
             IsCountingPiece = false;
             IsCountedPiece = false;
-            LastPieceWarpsCount = 0;
-            LastPieceLinesCount = 0;
+            PieceWarpsCount = 0;
+            PieceLinesCount = 0;
             PieceUndoBuffer.Clear();
             PieceRedoBuffer.Clear();
             LastUndoBufferID = 0;
@@ -2057,7 +2384,7 @@ namespace MiMFa.Model.IO
         {
             IsCountingPiece = false;
             IsCountedPiece = false;
-            LastPieceLinesCount = 0;
+            PieceLinesCount = 0;
             PieceWritesBuffer.Clear();
             if (HasForePiece) ForePiece.RestartWritesBuffer();
             OnActed("RestartWritesBuffer");
@@ -2318,6 +2645,7 @@ namespace MiMFa.Model.IO
 
 
         #region WRITE
+        public int WritePieceLine() => WritePieceLine("");
         public int WritePieceLine(string line)
         {
             PieceWritesBuffer.Add(line);
@@ -2345,6 +2673,7 @@ namespace MiMFa.Model.IO
             return WritePieceLines(from v in lineCells select Connector.RowToLine(v));
         }
 
+        public int WriteLine() => WriteLine("");
         public int WriteLine(string line)
         {
             if (HasForePiece) return ForePiece.WriteLine(line);
@@ -2362,6 +2691,7 @@ namespace MiMFa.Model.IO
             return counter;
         }
 
+        public int WriteRow() => WriteRow("");
         public int WriteRow(params string[] cells) => WriteRow((IEnumerable<string>)cells);
         public int WriteRow(params KeyValuePair<string, string>[] cells)
         {
@@ -2401,6 +2731,7 @@ namespace MiMFa.Model.IO
             return WriteLines(from v in lineCells select Connector.RowToLine(v));
         }
 
+        public long WriteWarp() => WriteWarp("");
         public long WriteWarp(string warp)
         {
             return WriteColumn(Connector.WarpToColumn(warp));
@@ -2413,12 +2744,13 @@ namespace MiMFa.Model.IO
             return counter;
         }
 
+        public long WriteColumn() => WriteColumn("");
         public long WriteColumn(params string[] cells) => WriteColumn((IEnumerable<string>)cells);
         public long WriteColumn(IEnumerable<string> warpCells)
         {
-            long l = -1;
+            long l = 0;
             foreach (var item in warpCells)
-                ChangeLine(++l, Connector.RowToLine(ReadRow(l).Concat(new string[] { item })));
+                ChangeLine(l, Connector.RowToLine(ReadRow(l++).Concat(new string[] { item })));
             return l;
         }
         public long WriteColumn(params KeyValuePair<string, string>[] cells)
@@ -2496,14 +2828,8 @@ namespace MiMFa.Model.IO
         }
 
         public long WriteCells(params string[] cells) => WriteCells((IEnumerable<string>)cells);
-        public long WriteCells(IEnumerable<string> cells)
-        {
-            return  WriteLine(Connector.RowToLine(cells));
-        }
-        public long WritePieceCells(IEnumerable<string> cells)
-        {
-            return WritePieceLine(Connector.RowToLine(cells));
-        }
+        public long WriteCells(IEnumerable<string> cells)=> WriteLine(Connector.RowToLine(cells));
+        public long WritePieceCells(IEnumerable<string> cells) => WritePieceLine(Connector.RowToLine(cells));
 
         public long WriteFrom(string path)
         {
@@ -2557,6 +2883,7 @@ namespace MiMFa.Model.IO
 
 
         #region INSERT
+        public long InsertLines(string fromLabel, IEnumerable<string> lines) => InsertLines(GetRowIndex(fromLabel), lines);
         public long InsertLines(long fromIndex, IEnumerable<string> lines)
         {
             long l = 0;
@@ -2564,14 +2891,16 @@ namespace MiMFa.Model.IO
                 l += InsertLine(fromIndex++, line);
             return l;
         }
-        public long InsertLines(long fromIndex, int toIndex, string line)
+        public long InsertLines(string fromLabel, string toLabel, string line) => InsertLines(GetRowIndex(fromLabel), GetRowIndex(toLabel), line);
+        public long InsertLines(long fromIndex, long toIndex, string line)
         {
             List<string> ls = new List<string>();
             for (long i = fromIndex; i < toIndex; i++)
                 ls.Add(line);
             return InsertLines(fromIndex,ls);
         }
-        public long InsertLine(long index,string line = "")
+        public long InsertLine(string label, string line = "") => InsertLine(GetRowIndex(label), line);
+        public long InsertLine(long index, string line = "")
         {
             var lp = GetPieceByLine(index);
             return lp.InsertPieceLine(lp.LastLineIndex, line);
@@ -2585,6 +2914,7 @@ namespace MiMFa.Model.IO
             return InsertLine(index, Connector.RowToLine(cells));
         }
 
+        public long InsertPieceLines(string fromLabel, IEnumerable<string> lines) => InsertPieceLines(GetRowIndex(fromLabel), lines);
         public long InsertPieceLines(long fromIndex, IEnumerable<string> lines)
         {
             long l = 0;
@@ -2596,7 +2926,8 @@ namespace MiMFa.Model.IO
             //OnChanged(ls.Count);
             //return ls.Count;
         }
-        public long InsertPieceLines(long fromIndex, int toIndex, string line)
+        public long InsertPieceLines(string fromLabel, string toLabel, string line) => InsertPieceLines(GetRowIndex(fromLabel), GetRowIndex(toLabel), line);
+        public long InsertPieceLines(long fromIndex, long toIndex, string line)
         {
             long l = 0;
             for (long i = fromIndex; i < toIndex; i++)
@@ -2606,11 +2937,8 @@ namespace MiMFa.Model.IO
             //OnChanged(counter);
             //return counter;
         }
-        public long InsertPieceLine(long index, IEnumerable<string> cells)
-        {
-            return InsertPieceLine(index, Connector.RowToLine(cells));
-        }
-        public long InsertPieceLine(long index, string line)
+        public long InsertPieceLine(string label, string line = "") => InsertPieceLine(GetRowIndex(label), line);
+        public long InsertPieceLine(long index, string line = "")
         {
             ReadsFlushIfNeeds();
             //return lp.ChangePieceLine(index,line + LinesSplitter + ReadLine(index));
@@ -2620,12 +2948,14 @@ namespace MiMFa.Model.IO
             //return 1;
         }
 
+        public long InsertPieceRow(string label, IEnumerable<string> cells) => InsertPieceRow(GetRowIndex(label), cells);
+        public long InsertPieceRow(long index, IEnumerable<string> cells) => InsertPieceLine(index, Connector.RowToLine(cells));
 
-        public long InsertWarps(long fromIndex, IEnumerable<string> warps)
-        {
-            return InsertColumns(fromIndex, from warp in warps select Connector.WarpToColumn(warp));
-        }
-        public long InsertWarps(long fromIndex, int toIndex, string warp)
+
+        public long InsertWarps(string fromLabel, IEnumerable<string> warps) => InsertWarps(GetColumnIndex(fromLabel), warps);
+        public long InsertWarps(long fromIndex, IEnumerable<string> warps) => InsertColumns(fromIndex, from warp in warps select Connector.WarpToColumn(warp));
+        public long InsertWarps(string fromLabel, string toLabel, string warp) => InsertWarps(GetColumnIndex(fromLabel), GetColumnIndex(toLabel), warp);
+        public long InsertWarps(long fromIndex, long toIndex, string warp)
         {
             var col = Connector.WarpToColumn(warp);
             List<IEnumerable<string>> ls = new List<IEnumerable<string>>();
@@ -2633,10 +2963,10 @@ namespace MiMFa.Model.IO
                 ls.Add(col);
             return InsertColumns(fromIndex, ls);
         }
-        public long InsertWarp(long index, string warp = "")
-        {
-            return InsertColumn(index, Connector.WarpToColumn(warp));
-        }
+        public long InsertWarp(string label, string warp = "") => InsertWarp(GetColumnIndex(label), warp);
+        public long InsertWarp(long index, string warp = "") => InsertColumn(index, Connector.WarpToColumn(warp));
+     
+        public long InsertColumns(string label, IEnumerable<IEnumerable<string>> warpsCells) => InsertColumns(GetColumnIndex(label), warpsCells);
         public long InsertColumns(long index, IEnumerable<IEnumerable<string>> warpsCells)
         {
             //if (!IsSmall) return 0;
@@ -2669,10 +2999,8 @@ namespace MiMFa.Model.IO
             //}
             return LinesCount;
         }
-        public long InsertColumn(long index, IEnumerable<string> cells)
-        {
-            return InsertColumns(index,new IEnumerable<string>[] { cells });
-        }
+        public long InsertColumn(string label, IEnumerable<string> cells) => InsertColumn(GetColumnIndex(label), cells);
+        public long InsertColumn(long index, IEnumerable<string> cells) => InsertColumns(index,new IEnumerable<string>[] { cells });
         #endregion
 
 
@@ -2686,6 +3014,7 @@ namespace MiMFa.Model.IO
             ChangesFlushIfNeeds();
         }
 
+        public long ChangeLines(string fromLabel, string line) => ChangeLines(GetRowIndex(fromLabel), line);
         public long ChangeLines(long fromIndex, string line)
         {
             var lp = GetPieceByLine(fromIndex);
@@ -2694,6 +3023,7 @@ namespace MiMFa.Model.IO
                 lp.ChangePieceLines(fromIndex, fromIndex, ls) + lp.ForePiece.ChangeLines(0, line) :
                 lp.ChangePieceLines(fromIndex, fromIndex, ls);
         }
+        public long ChangeLines(string fromLabel, string toLabel, IEnumerable<string> lines) => ChangeLines(GetRowIndex(fromLabel), GetRowIndex(toLabel), lines);
         public long ChangeLines(long fromIndex, long toIndex, IEnumerable<string> lines)
         {
             var lp = GetPieceByLine(fromIndex);
@@ -2705,6 +3035,7 @@ namespace MiMFa.Model.IO
                     lp.ChangePieceLines(fromIndex, toIndex, lines);
             else return lp.ChangePieceLines(fromIndex, toIndex, lines);
         }
+        public long ChangeLine(string label, string line) => ChangeLine(GetRowIndex(label), line);
         public long ChangeLine(long index, string line)
         {
             var lp = GetPieceByLine(index);
@@ -2730,6 +3061,7 @@ namespace MiMFa.Model.IO
                     lp.ChangePieceRows(fromIndex, toIndex, lines);
             else return lp.ChangePieceRows(fromIndex, toIndex, lines);
         }
+        public long ChangeRows(IEnumerable<IEnumerable<string>> rows, params string[] labels) => ChangeRows(rows, (from v in labels select GetRowIndex(v)).ToArray());
         public long ChangeRows(IEnumerable<IEnumerable<string>> rows, params long[] indexes)
         {
             if (!rows.Any()) return 0;
@@ -2747,23 +3079,33 @@ namespace MiMFa.Model.IO
                     else break;
             return l;
         }
-        public long ChangeRow(long index, IEnumerable<string> cells)
+  
+        public long ChangeRow(string label, IEnumerable<string> cells) => ChangeRow(GetRowIndex(label), cells);
+        public long ChangeRow(string rowLabel, long fromColIndex, IEnumerable<string> cells) => ChangeRow(GetRowIndex(rowLabel), fromColIndex, cells);
+        public long ChangeRow(long index, IEnumerable<string> cells)  => ChangeRow(index, 0, cells);
+        public long ChangeRow(long rowIndex, long fromColIndex, IEnumerable<string> cells)
         {
-            var lp = GetPieceByLine(index);
-            return lp.ChangePieceRow(lp.LastLineIndex, cells);
+            var lp = GetPieceByLine(rowIndex);
+            return lp.ChangePieceRow(lp.LastLineIndex, fromColIndex, cells);
         }
+
+        public long ChangeWarp(string label,string warp) => ChangeWarp(GetColumnIndex(label), warp);
         public long ChangeWarp(long index, string warp)
         {
             return ChangeColumn(index, Connector.WarpToColumn(warp));
         }
-        public long ChangeColumn(long index, IEnumerable<string> cells)
+
+        public long ChangeColumn(string colLabel, long fromRowIndex, IEnumerable<string> cells) => ChangeColumn(GetColumnIndex(colLabel), fromRowIndex, cells);
+        public long ChangeColumn(string label, IEnumerable<string> cells) => ChangeColumn(GetColumnIndex(label), cells);
+        public long ChangeColumn(long index, IEnumerable<string> cells)  => ChangeColumn(index, 0, cells);
+        public long ChangeColumn(long colIndex, long fromRowIndex, IEnumerable<string> cells)
         {
             if (!IsSmall) return 0;
-            long l = 0;
-            int i = Convert.ToInt32(index);
+            long l = fromRowIndex;
+            int i = Convert.ToInt32(colIndex);
             var ce = cells.GetEnumerator();
             string n = "";
-            foreach (var row in ReadRows())
+            foreach (var row in ReadRows(fromRowIndex))
             {
                 string p = row.ElementAtOrDefault(i);
                 if (ce.MoveNext()) n = ce.Current;
@@ -2771,8 +3113,10 @@ namespace MiMFa.Model.IO
                 if (p != n) ChangeCell(i, l, n);
                 l++;
             }
-            return l;
+            while (ce.MoveNext()) ChangeCell(i, l++, ce.Current);
+            return l - fromRowIndex;
         }
+        public long ChangeColumns(IEnumerable<IEnumerable<string>> cols, params string[] labels) => ChangeColumns(cols, (from v in labels select GetColumnIndex(v)).ToArray());
         public long ChangeColumns(IEnumerable<IEnumerable<string>> cols, params long[] indexes)
         {
             if (!IsSmall) return 0;
@@ -2803,18 +3147,15 @@ namespace MiMFa.Model.IO
             }
             return l;
         }
-        public long ChangeCell(LongPoint position, string value)
-        {
-            return ChangeCell(position.X, position.Y, value);
-        }
+
+        public long ChangeCell(string colLabel, string rowLabel, long documentIndex, string value) => ChangeCell(GetColumnIndex(colLabel), GetRowIndex(rowLabel), documentIndex, value);
+        public long ChangeCell(string colLabel, string rowLabel, string value) => ChangeCell(GetColumnIndex(colLabel), GetRowIndex(rowLabel), value);
+        public long ChangeCell(LongPoint position, string value) => ChangeCell(position.X, position.Y, value);
+        public long ChangeCell(long colIndex, long rowIndex, string value) => ChangeCell(Convert.ToInt32(colIndex),rowIndex, value);
         public long ChangeCell(int colIndex, long rowIndex, string value)
         {
             var row = ReadRow(rowIndex);
-            return ChangeRow(rowIndex, CollectionService.TakeOrDefault(row,colIndex).Concat(new string[] { value }).Concat(row.Skip(colIndex + 1)));
-        }
-        public long ChangeCell(long colIndex, long rowIndex, string value)
-        {
-            return ChangeCell(Convert.ToInt32(colIndex),rowIndex, value);
+            return ChangeRow(rowIndex, CollectionService.TakeOrDefault(row, colIndex).Concat(new string[] { value }).Concat(row.Skip(colIndex + 1)));
         }
         public long ChangeCell(long colIndex, long rowIndex, long documentIndex, string value)
         {
@@ -2831,7 +3172,7 @@ namespace MiMFa.Model.IO
             long l = 0;
             IEnumerator<string> iecliplinescells = cells.GetEnumerator();
             if (indexes == null || indexes.Length == 0)
-                ChangeRows(CollectionService.Split(cells, Convert.ToInt32(WarpsCount)), null);
+                ChangeRows(CollectionService.Split(cells, Convert.ToInt32(WarpsCount)), new long[0]);
             else
                 for (int i = 0; i < indexes.Length; i++)
                     if (iecliplinescells.MoveNext())
@@ -2844,51 +3185,55 @@ namespace MiMFa.Model.IO
             return l;
         }
 
-
-        public long ChangePieceLines(long fromIndex, string line)
-        {
-            return ChangePieceLines(fromIndex, fromIndex, new string[] { line });
-        }
+        public long ChangePieceLines(string fromLabel, IEnumerable<string> lines) => ChangePieceLines(fromLabel, fromLabel, lines);
+        public long ChangePieceLines(string fromLabel, string toLabel, IEnumerable<string> lines) => ChangePieceLines(GetRowIndex(fromLabel), GetRowIndex(toLabel), lines);
+        public long ChangePieceLines(long fromIndex,IEnumerable<string> lines) => ChangePieceLines(fromIndex, fromIndex, lines);
         public long ChangePieceLines(long fromIndex, long toIndex, IEnumerable<string> lines)
         {
             long l = toIndex - fromIndex;
             if (l < 0) l = LastPieceLinesCount - fromIndex;
+            while (PieceLinesCount <= fromIndex) WriteLine();
             AddFilterItem(new FilterItem(TableChangeMode.Modify, fromIndex, fromIndex + l, lines.ToList(), ++LastUndoBufferID));
             l = PieceUndoBuffer.Last().ChangeNumber;
             OnLinesChanged(l);
             return l;
         }
+        public long ChangePieceLine(string label, string line) => ChangePieceLine(GetRowIndex(label), line);
         public long ChangePieceLine(long index, string line)
         {
+            while (PieceLinesCount <= index) WriteLine();
             AddFilterItem(new FilterItem(TableChangeMode.Modify, index, ++LastUndoBufferID, line));
             long l = PieceUndoBuffer.Last().ChangeNumber;
             OnLinesChanged(l);
             return l;
         }
-        public long ChangePieceRow(long index, IEnumerable<string> cells)
-        {
-            return ChangePieceLine(index, Connector.RowToLine(cells));
-        }
-        public long ChangePieceRows(long fromIndex, IEnumerable<string> cells)
-        {
-            return ChangePieceRows(fromIndex, fromIndex, new string[1][] { cells.ToArray() });
-        }
+
+        public long ChangePieceRow(string label, IEnumerable<string> cells) => ChangePieceRow(GetRowIndex(label), cells);
+        public long ChangePieceRow(string rowLabel, long fromColIndex, IEnumerable<string> cells) => ChangePieceRow(GetRowIndex(rowLabel),fromColIndex, cells);
+        public long ChangePieceRow(long index, IEnumerable<string> cells) => ChangePieceRow(index, 0, cells);
+        public long ChangePieceRow(long rowIndex, long fromColIndex, IEnumerable<string> cells) => ChangePieceLine(rowIndex, Connector.RowToLine(CollectionService.TakeOrDefault(ReadRow(rowIndex), fromColIndex,null).Concat(cells)));
+        public long ChangePieceRows(string fromLabel, IEnumerable<string> cells) => ChangePieceRows(fromLabel, fromLabel, new string[1][] { cells.ToArray() });
+        public long ChangePieceRows(long fromIndex, IEnumerable<string> cells) => ChangePieceRows(fromIndex, fromIndex, new string[1][] { cells.ToArray() });
+        public long ChangePieceRows(string fromLabel, string toLabel, IEnumerable<IEnumerable<string>> cells) => ChangePieceRows(GetRowIndex(fromLabel), GetRowIndex(toLabel), cells);
         public long ChangePieceRows(long fromIndex, long toIndex, IEnumerable<IEnumerable<string>> lines)
         {
             return ChangePieceLines(fromIndex, toIndex, from v in lines select Connector.RowToLine(v));
         }
-        public long ChangePieceWarp(long index, string warp)
-        {
-            return ChangePieceColumn(index, Connector.WarpToColumn(warp));
-        }
-        public long ChangePieceColumn(long index, IEnumerable<string> cells)
+
+        public long ChangePieceWarp(string label, string warp) => ChangePieceWarp(GetColumnIndex(label), warp);
+        public long ChangePieceWarp(long index, string warp) => ChangePieceColumn(index, Connector.WarpToColumn(warp));
+     
+        public long ChangePieceColumn(string label, IEnumerable<string> cells) => ChangePieceColumn(GetColumnIndex(label), cells);
+        public long ChangePieceColumn(string label, long fromRowIndex, IEnumerable<string> cells) => ChangePieceColumn(GetColumnIndex(label), fromRowIndex, cells);
+        public long ChangePieceColumn(long index, IEnumerable<string> cells) => ChangePieceColumn(index, 0, cells);
+        public long ChangePieceColumn(long index, long fromRowIndex, IEnumerable<string> cells)
         {
             if (!IsSmallPiece) return 0;
-            long l = 0;
+            long l = fromRowIndex;
             int i = Convert.ToInt32(index);
             var ce = cells.GetEnumerator();
             string n = "";
-            foreach (var row in ReadPieceRows())
+            foreach (var row in ReadPieceRows(fromRowIndex))
             {
                 string p = row.ElementAtOrDefault(i);
                 if (ce.MoveNext()) n = ce.Current;
@@ -2896,12 +3241,16 @@ namespace MiMFa.Model.IO
                 if (p != n) ChangePieceCell(i, l, n);
                 l++;
             }
-            return l;
+            while (ce.MoveNext()) ChangePieceCell(i, l++, ce.Current);
+            return l - fromRowIndex;
         }
+    
+        public long ChangePieceCell(string colLabel, string rowLabel, string value) => ChangePieceCell(GetColumnIndex(colLabel), GetRowIndex(rowLabel), value);
         public long ChangePieceCell(int colIndex, long rowIndex, string value)
         {
             var row = ReadPieceRow(rowIndex);
-            return ChangePieceRow(rowIndex, row.Take(colIndex).Concat(new string[] { value }).Concat(row.Skip(colIndex + 1)));
+            var l = ChangePieceRow(rowIndex, row.Take(colIndex).Concat(new string[] { value }).Concat(row.Skip(colIndex + 1)));
+            return l;
         }
         public long ChangePieceCell(long colIndex, long rowIndex, string value)
         {
@@ -3004,29 +3353,31 @@ namespace MiMFa.Model.IO
         {
             if (!IsSmall) return 0;
             ReadsFlushIfNeeds();
-            var cols = indices.Distinct().ToList();
+            var cols = indices.Distinct().ToDictionary(k=>k,k=>0);
             int i = 0;
             foreach (var row in ReadRows(0))
             {
                 int c = 0;
-                ChangeRow(i++, from v in row where !cols.Contains(c++) select v);
+                ChangeRow(i++, from v in row where !cols.ContainsKey(c++) || cols[c-1]++ < 0 select v);
             }
-            OnWarpsChanged(-cols.Count());
+            OnWarpsChanged(-cols.Where(v=>v.Value > 0).Count());
             return LinesCount;
         }
         public long DeleteColumns(long fromIndex, long toIndex)
         {
             if (!IsSmall) return 0;
             ReadsFlushIfNeeds();
-            int from = Convert.ToInt32(Math.Min(fromIndex, toIndex));
+            int from = Convert.ToInt32(Math.Max(Math.Min(fromIndex, toIndex),0));
             int to = Convert.ToInt32(Math.Max(fromIndex, toIndex))+1;
             int i = 0;
+            int max = 0; 
             foreach (var row in ReadRows(0))
             {
                 var ls = row.ToList();
+                max = Math.Max(max, ls.Count);
                 ChangeRow(i++, ls.Take(from).Concat(ls.Skip(to)));
             }
-            OnWarpsChanged(from - to);
+            OnWarpsChanged(from - max);
             return LinesCount;
         }
         public long DeleteColumn(long index)
@@ -3059,29 +3410,31 @@ namespace MiMFa.Model.IO
         {
             if (!IsSmallPiece) return 0;
             ReadsFlushIfNeeds();
-            var cols = indices.Distinct().ToList();
+            var cols = indices.Distinct().ToDictionary(k=>k,k=>0);
             int i = 0;
             foreach (var row in ReadPieceRows())
             {
                 int c = 0;
-                ChangePieceRow(i++, from v in row where !cols.Contains(c++) select v);
+                ChangePieceRow(i++, from v in row where !cols.ContainsKey(c++) || cols[c-1]++ < 0 select v);
             }
-            OnWarpsChanged(-cols.Count());
+            OnWarpsChanged(-cols.Where(v=>v.Value > 0).Count());
             return LinesCount;
         }
         public long DeletePieceColumns(long fromIndex, long toIndex)
         {
             if (!IsSmallPiece) return 0;
             ReadsFlushIfNeeds();
-            int from = Convert.ToInt32(Math.Min(fromIndex, toIndex));
+            int from = Convert.ToInt32(Math.Max(Math.Min(fromIndex, toIndex), 0));
             int to = Convert.ToInt32(Math.Max(fromIndex, toIndex)) + 1;
             int i = 0;
+            int max = 0;
             foreach (var row in ReadPieceRows())
             {
                 var ls = row.ToList();
+                max = Math.Max(max, ls.Count);
                 ChangePieceRow(i++, ls.Take(from).Concat(ls.Skip(to)));
             }
-            OnWarpsChanged(from - to);
+            OnWarpsChanged(from - max);
             return LinesCount;
         }
         public long DeletePieceColumn(long index)
@@ -3090,7 +3443,6 @@ namespace MiMFa.Model.IO
         }
 
         #endregion
-
 
 
         #region HISTORY
@@ -3284,10 +3636,7 @@ namespace MiMFa.Model.IO
             else return ReadPieceText();
         }
 
-        public IEnumerable<string> ReadPieceLines()
-        {
-            return PieceUndoBuffer.Count < 1? ReadPieceRawLines() : PieceUndoBuffer.Filter(ReadPieceRawLines());
-        }
+        public string ReadPieceLine(string label) => ReadPieceLine(GetRowIndex(label));
         public string ReadPieceLine(long index)
         {
             var lines = ReadPieceLines().Skip(Convert.ToInt32(index));
@@ -3295,6 +3644,11 @@ namespace MiMFa.Model.IO
             //foreach (var item in ReadLines()) if (index-- == 0) return item;
             return null;
         }
+        public IEnumerable<string> ReadPieceLines() => PieceUndoBuffer.Count < 1? ReadPieceRawLines() : PieceUndoBuffer.Filter(ReadPieceRawLines());
+        public IEnumerable<string> ReadPieceLines(long fromIndex) => ReadPieceLines().Skip((int)LastLineIndex);
+        public IEnumerable<string> ReadPieceLines(string fromLabel, int count) => ReadPieceLines(GetRowIndex(fromLabel), count);
+        public IEnumerable<string> ReadPieceLines(long fromIndex, int count) => count > 0 ? ReadPieceLines(fromIndex).Take(count) : ReadLines(fromIndex);
+        public string ReadLine(string label) => ReadLine(GetRowIndex(label));
         public string ReadLine(long index)
         {
             var lines = ReadLines(index);
@@ -3315,11 +3669,9 @@ namespace MiMFa.Model.IO
                 return lp.ReadLines().Skip((int)lp.LastLineIndex);
             return lp.ReadLines(lp.ReadLines(), lp.LastLineIndex);
         }
-        public IEnumerable<string> ReadLines(long fromIndex, int count)
-        {
-            if (count > 0) return ReadLines(fromIndex).Take(count);
-            else return ReadLines(fromIndex);
-        }
+        public IEnumerable<string> ReadLines(string fromLabel, int count) => ReadLines(GetRowIndex(fromLabel), count);
+        public IEnumerable<string> ReadLines(long fromIndex, int count) => count > 0? ReadLines(fromIndex).Take(count):ReadLines(fromIndex);
+        public IEnumerable<string> ReadLines(List<string> labels) => ReadLines((from l in labels select GetRowIndex(l)).ToList());
         public IEnumerable<string> ReadLines(List<int> indexes)
         {
             int len = indexes.Count;
@@ -3400,9 +3752,9 @@ namespace MiMFa.Model.IO
         }
 
 
-        public IEnumerable<KeyValuePair<string, string>> ReadRecord(string rowLabel, bool caseSensitive = false, bool forceLabeled = true)
+        public IEnumerable<KeyValuePair<string, string>> ReadRecord(string label, bool caseSensitive = false, bool forceLabeled = true)
         {
-            return ReadRecord(GetRowIndex(rowLabel, caseSensitive), forceLabeled);
+            return ReadRecord(GetRowIndex(label, caseSensitive), forceLabeled);
         }
         public IEnumerable<KeyValuePair<string, string>> ReadRecord(long index, long fromColIndex, bool forceLabeled = true)
         {
@@ -3420,18 +3772,29 @@ namespace MiMFa.Model.IO
             foreach (var row in ReadRows(fromIndex))
             {
                 int i = 0;
-                yield return from v in row select new KeyValuePair<string, string>(labels.ElementAtOrDefault(i++), v);
+                var lrow = row.ToArray();
+                yield return (
+                    from v in lrow select new KeyValuePair<string, string>(
+                    labels.ElementAtOrDefault(i++), v))
+                    .Concat(labels.Count <= lrow.Length ? new KeyValuePair<string, string>[0]:
+                    from k in labels.Skip(i)
+                    select new KeyValuePair<string, string>(k, null)
+                );
             }
         }
 
+        public IEnumerable<string> ReadRow(string label) => ReadRow(GetRowIndex(label));
         public IEnumerable<string> ReadRow(long index)
         {
             return Connector.LineToRow(ReadLine(index));
         }
+        public IEnumerable<string> ReadRow(string label, string fromColLabel) => ReadRow(GetRowIndex(label), GetColumnIndex(fromColLabel));
         public IEnumerable<string> ReadRow(long index, long fromColIndex)
         {
             return ReadRow(index).Skip(Convert.ToInt32(fromColIndex));
         }
+        public IEnumerable<string> ReadRow(string fromRowLabel, List<string> colLabels) => ReadRow(GetRowIndex(fromRowLabel), (from l in colLabels select GetColumnIndex(l)).ToList());
+        public IEnumerable<string> ReadRow(long fromIndex, List<string> colLabels) => ReadRow(fromIndex,(from l in colLabels select GetColumnIndex(l)).ToList());
         public IEnumerable<string> ReadRow(long fromIndex, List<int> colIndexes)
         {
             return  CollectionService.GetItems(ReadRow(fromIndex), colIndexes);
@@ -3440,70 +3803,37 @@ namespace MiMFa.Model.IO
         {
             return  CollectionService.GetItems(ReadRow(fromIndex), (from v in colIndexes select Convert.ToInt32(v)).ToList());
         }
+        public IEnumerable<string> ReadPieceRow(string label) => ReadPieceRow(GetRowIndex(label));
         public IEnumerable<string> ReadPieceRow(long index)
         {
             return Connector.LineToRow(ReadPieceLine(index));
         }
-        public IEnumerable<IEnumerable<string>> ReadRows()
-        {
-            return from line in ReadLines() select Connector.LineToRow(line);
-        }
-        public IEnumerable<IEnumerable<string>> ReadRows(long fromIndex)
-        {
-            return from line in ReadLines(fromIndex) select Connector.LineToRow(line);
-        }
-        public IEnumerable<IEnumerable<string>> ReadRows(int fromIndex, int count)
-        {
-            return from line in ReadLines(fromIndex, count) select Connector.LineToRow(line);
-        }
-        public IEnumerable<IEnumerable<string>> ReadRows(List<int> indexes)
-        {
-            return from line in ReadLines(indexes) select Connector.LineToRow(line);
-        }
-        public IEnumerable<IEnumerable<string>> ReadRows(long fromIndex, List<int> colIndexes)
-        {
-            return from row in ReadRows(fromIndex) select CollectionService.GetItems(row, colIndexes);
-        }
-        public IEnumerable<IEnumerable<string>> ReadRows(long fromIndex, List<long> colIndexes)
-        {
-            return from row in ReadRows(fromIndex) select CollectionService.GetItems(row, (from v in colIndexes select Convert.ToInt32(v)).ToList());
-        }
-        public IEnumerable<IEnumerable<string>> ReadRows(List<int> rowIndexes, List<int> colIndexes)
-        {
-            return from row in ReadRows(rowIndexes) select CollectionService.GetItems(row, colIndexes);
-        }
-        public IEnumerable<IEnumerable<string>> ReadRows(List<long> rowIndexes,List<long> colIndexes)
-        {
-            return ReadRows((from v in rowIndexes select Convert.ToInt32(v)).ToList(), (from v in colIndexes select Convert.ToInt32(v)).ToList());
-        }
-        public IEnumerable<IEnumerable<string>> ReadRows(List<long> indexes)
-        {
-            return from line in ReadLines(indexes) select Connector.LineToRow(line);
-        }
-        public IEnumerable<IEnumerable<string>> ReadRows(IEnumerable<string> lines, long fromIndex)
-        {
-            return from line in ReadLines(lines, fromIndex) select Connector.LineToRow(line);
-        }
-        public IEnumerable<IEnumerable<string>> ReadRows(string pattern)
-        {
-            return from line in ReadLines(pattern) select Connector.LineToRow(line);
-        }
-        public IEnumerable<IEnumerable<string>> ReadRows(string pattern, long fromIndex)
-        {
-            return from line in ReadLines( pattern, fromIndex) select Connector.LineToRow(line);
-        }
-        public IEnumerable<IEnumerable<string>> ReadPieceRows()
-        {
-            return from line in ReadPieceLines() select Connector.LineToRow(line);
-        }
+        public IEnumerable<IEnumerable<string>> ReadRows() => from line in ReadLines() select Connector.LineToRow(line);
+        public IEnumerable<IEnumerable<string>> ReadRows(long fromIndex) => from line in ReadLines(fromIndex) select Connector.LineToRow(line);
+        public IEnumerable<IEnumerable<string>> ReadRows(int fromIndex, int count)=> from line in ReadLines(fromIndex, count) select Connector.LineToRow(line);
+        public IEnumerable<IEnumerable<string>> ReadRows(List<int> indexes)=> from line in ReadLines(indexes) select Connector.LineToRow(line);
+        public IEnumerable<IEnumerable<string>> ReadRows(long fromIndex, List<int> colIndexes) => from row in ReadRows(fromIndex) select CollectionService.GetItems(row, colIndexes);
+        public IEnumerable<IEnumerable<string>> ReadRows(long fromIndex, List<long> colIndexes)=> from row in ReadRows(fromIndex) select CollectionService.GetItems(row, (from v in colIndexes select Convert.ToInt32(v)).ToList());
+        public IEnumerable<IEnumerable<string>> ReadRows(List<int> rowIndexes, List<int> colIndexes) => from row in ReadRows(rowIndexes) select CollectionService.GetItems(row, colIndexes);
+        public IEnumerable<IEnumerable<string>> ReadRows(List<long> rowIndexes,List<long> colIndexes) => ReadRows((from v in rowIndexes select Convert.ToInt32(v)).ToList(), (from v in colIndexes select Convert.ToInt32(v)).ToList());
+        public IEnumerable<IEnumerable<string>> ReadRows(List<long> indexes) => from line in ReadLines(indexes) select Connector.LineToRow(line);
+        public IEnumerable<IEnumerable<string>> ReadRows(IEnumerable<string> lines, long fromIndex) => from line in ReadLines(lines, fromIndex) select Connector.LineToRow(line);
+        public IEnumerable<IEnumerable<string>> ReadRows(string pattern) => from line in ReadLines(pattern) select Connector.LineToRow(line);
+        public IEnumerable<IEnumerable<string>> ReadRows(string pattern, long fromIndex) => from line in ReadLines( pattern, fromIndex) select Connector.LineToRow(line);
+        public IEnumerable<IEnumerable<string>> ReadPieceRows() => from line in ReadPieceLines() select Connector.LineToRow(line);
+        public IEnumerable<IEnumerable<string>> ReadPieceRows(long fromIndex) => from line in ReadPieceLines(fromIndex) select Connector.LineToRow(line);
+        public IEnumerable<IEnumerable<string>> ReadPieceRows(long fromIndex, int count) => from line in ReadPieceLines(fromIndex, count) select Connector.LineToRow(line);
 
-        public string ReadWarp(long index, long fromrowIndex = 0)
+        public string ReadWarp(string label) => ReadWarp(GetColumnIndex(label));
+        public string ReadWarp(string label, string fromRowLabel) => ReadWarp(GetColumnIndex(label), GetRowIndex(fromRowLabel));
+        public string ReadWarp(long index, long fromRowIndex = 0)
         {
-            var cells = ReadColumn(index, fromrowIndex);
+            var cells = ReadColumn(index, fromRowIndex);
             if (cells.Any())
                 return Connector.ColumnToWarp(cells);
             return null;
         }
+        public string ReadPieceWarp(string label) => ReadPieceWarp(GetColumnIndex(label));
         public string ReadPieceWarp(long index)
         {
             var cells = ReadPieceColumn(index);
@@ -3530,11 +3860,15 @@ namespace MiMFa.Model.IO
             return ReadWarps(indexes.Select(v => (int)v).ToList());
         }
 
-        public IEnumerable<string> ReadColumn(long index, long fromrowIndex = 0)
+        public IEnumerable<string> ReadColumn(string label) => ReadColumn(GetColumnIndex(label));
+        public IEnumerable<string> ReadColumn(string label, string fromRowLabel) => ReadColumn(GetColumnIndex(label), GetRowIndex(fromRowLabel));
+        public IEnumerable<string> ReadColumn(long index, long fromRowIndex = 0)
         {
             int i = Convert.ToInt32(index);
-            return from v in ReadRows(fromrowIndex) select v.ElementAtOrDefault(i);
+            return from v in ReadRows(fromRowIndex) select v.ElementAtOrDefault(i);
         }
+        public IEnumerable<string> ReadColumn(string fromLabel, List<string> rowlLabels) => ReadRow(GetColumnIndex(fromLabel), (from l in rowlLabels select GetRowIndex(l)).ToList());
+        public IEnumerable<string> ReadColumn(long fromIndex, List<string> rowlLabels) => ReadRow(fromIndex,(from l in rowlLabels select GetRowIndex(l)).ToList());
         public IEnumerable<string> ReadColumn(int index, List<int> rowIndexes)
         {
             return CollectionService.GetItems(ReadColumn(index), rowIndexes);
@@ -3550,12 +3884,12 @@ namespace MiMFa.Model.IO
         }
         public IEnumerable<IEnumerable<string>> ReadPieceColumns(long fromColIndex = 0)
         {
-            for (long i = fromColIndex; i < LastPieceWarpsCount; i++)
+            for (long i = fromColIndex; i < PieceWarpsCount; i++)
                 yield return ReadPieceColumn(i);
         }
         public IEnumerable<IEnumerable<string>> ReadColumns(long fromColIndex = 0, long fromRowIndex = 0)
         {
-            for (long i = fromColIndex; i < LastPieceWarpsCount; i++)
+            for (long i = fromColIndex; i < PieceWarpsCount; i++)
                 yield return ReadColumn(i, fromRowIndex);
         }
         public IEnumerable<IEnumerable<string>> ReadColumns(List<int> indexes, long fromRowIndex = 0)
@@ -3603,20 +3937,18 @@ namespace MiMFa.Model.IO
             return ReadColumns((from v in colIndexes select Convert.ToInt32(v)).ToList(), (from v in rowIndexes select Convert.ToInt32(v)).ToList());
         }
 
-        public string ReadCell(long col, long row)
-        {
-           return ReadRow(row).ElementAtOrDefault(Convert.ToInt32(col));
-        }
+        public string ReadCell(string colLabel, string rowLabel) => ReadCell(GetColumnIndex(colLabel),GetRowIndex(rowLabel));
+        public string ReadCell(long col, long row) => ReadRow(row).ElementAtOrDefault(Convert.ToInt32(col));
+        public string ReadCell(string colLabel, string rowLabel, long documentIndex) => ReadCell(GetColumnIndex(colLabel),GetRowIndex(rowLabel), documentIndex);
         public string ReadCell(long col, long row, long documentIndex)
         {
             var ch = Piece(documentIndex, null);
             if (ch != null) return ch.ReadCell(col, row);
             else return null;
         }
-        public string ReadPieceCell(long col, long row)
-        {
-            return ReadPieceRow(row).ElementAtOrDefault(Convert.ToInt32(col));
-        }
+        public string ReadPieceCell(string colLabel, string rowLabel) => ReadPieceCell(GetColumnIndex(colLabel),GetRowIndex(rowLabel));
+        public string ReadPieceCell(long col, long row) => ReadPieceRow(row).ElementAtOrDefault(Convert.ToInt32(col));
+        public string ReadPieceCell(string colLabel, string rowLabel, long documentIndex) => ReadPieceCell(GetColumnIndex(colLabel),GetRowIndex(rowLabel), documentIndex);
         public string ReadPieceCell(long col, long row, long documentIndex)
         {
             var ch = Piece(documentIndex, null);
@@ -3635,6 +3967,19 @@ namespace MiMFa.Model.IO
                 foreach (var cell in row)
                     yield return cell;
         }
+
+        public IEnumerable<string> SampleCells(long col = -1, long row = -1, int numbers = 100, Random random = null)
+        {
+            if (numbers == 0) yield break;
+            random = random??new Random();
+            yield return ReadCell(
+                col < 0 ? random.Next(HasColumnsLabels ? (int)ColumnsLabelsIndex + 1 : 0, (int)WarpsCount) : col,
+                row < 0 ? random.Next(HasRowsLabels ? (int)RowsLabelsIndex + 1 : 0, (int)LinesCount) : row
+            );
+            foreach (var cell in SampleCells(col, row, numbers-1, random))
+                yield return cell;
+        }
+
         #endregion
 
 
@@ -3745,8 +4090,6 @@ namespace MiMFa.Model.IO
         //    return l + (HasForePiece?ForePiece.ReplaceLines(re, replacement, fromIndex) :0);
         //}
         #endregion
-
-
 
 
         #region METADATA
@@ -4093,8 +4436,6 @@ namespace MiMFa.Model.IO
             SetMetaData(root,"Size", PieceSize+"");
             SetMetaData(root, "LastUndoBufferID", LastUndoBufferID + "");
             SetMetaData(root, "LastRedoBufferID", LastRedoBufferID + "");
-            SetMetaData(root, "PieceWarpsCount", PieceWarpsCount + "");
-            SetMetaData(root, "PieceLinesCount", PieceLinesCount + "");
             SetMetaData(root, "LastPieceWarpsCount", LastPieceWarpsCount + "");
             SetMetaData(root, "LastPieceLinesCount", LastPieceLinesCount + "");
             SetMetaData(root, "LastWarpIndex", LastWarpIndex + "");
@@ -4279,5 +4620,149 @@ namespace MiMFa.Model.IO
         #endregion
 
 
+        #region CONVERT
+        public IEnumerable<string> ToSQL(string database = null, string table = null)
+        {
+            if (!string.IsNullOrWhiteSpace(database))
+            {
+                yield return string.Join(Environment.NewLine,
+                    "-- DATABASE: Check if the database exists and create if it does not",
+                    $"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '{database}')",
+                    "BEGIN",
+                    $"\tCREATE DATABASE [{database}];",
+                    "END;"
+                );
+                yield return string.Join(Environment.NewLine,
+                    "-- DATABASE: Refresh the database",
+                    "USE [master];"
+                );
+                yield return string.Join(Environment.NewLine,
+                    "-- DATABASE: Use the database",
+                    $"USE [{database}];"
+                );
+            }
+            table = table ?? ConvertService.ToVariableName(NameWithoutExtension, "_");
+            if (!string.IsNullOrWhiteSpace(table))
+            {
+                string[] freetypes = new string[] { "BIT", "TINYINT", "SMALLINT", "INT", "INTEGER", "SERIAL", "BIGINT", "REAL", "FLOAT" };
+                List<string> cols = new List<string>();
+                List<string> types = new List<string>();
+                List<string> tableNotExists = new List<string>();
+                int index = 0;
+                int idindex = -1;
+                string id = null;
+                foreach (var item in ColumnsLabelsTypes)
+                {
+                    List<string> col = new List<string>();
+                    string cname = ConvertService.ToVariableName(item.Key,"_");
+                    string ctype = (item.Value ?? "TEXT").ToUpper();
+                    if (string.IsNullOrWhiteSpace(cname)) cname = $"_COLUMN{index+1}_";
+                    col.Add($"[{cname}]");
+                    col.Add(ctype);
+                    if (
+                        idindex < 0 &&
+                        (index >= RowsLabelsIndex || (RowsLabelsIndex < 0 && index >= 0)) &&
+                        freetypes.Skip(3).Take(4).Contains(ctype)
+                    )
+                    {
+                        col.Add("PRIMARY KEY");
+                        id = cname;
+                        idindex = index;
+                    }
+                    cols.Add(cname);
+                    types.Add(ctype);
+                    tableNotExists.Add(string.Join(" ", col));
+                    index++;
+                }
+                if (string.IsNullOrEmpty(id))
+                {
+                    id = "_ID_";
+                    idindex = -1;
+                    switch (TypesStandard)
+                    {
+                        case StandardTypes.MySQL:
+                            tableNotExists.Insert(0,$"[{id}] BIGINT AUTO_INCREMENT PRIMARY KEY");
+                            types.Insert(0, "BIGINT");
+                            break;
+                        case StandardTypes.SQLite:
+                            tableNotExists.Insert(0, $"[{id}] INTEGER PRIMARY KEY AUTOINCREMENT");
+                            types.Insert(0, "INTEGER");
+                            break;
+                        case StandardTypes.PostgreSQL:
+                            tableNotExists.Insert(0, $"[{id}] SERIAL PRIMARY KEY");
+                            types.Insert(0, "SERIAL");
+                            break;
+                        case StandardTypes.C:
+                        case StandardTypes.Java:
+                        case StandardTypes.MSSQL:
+                        default:
+                            tableNotExists.Insert(0, $"[{id}] BIGINT IDENTITY(1,1) PRIMARY KEY");
+                            types.Insert(0, "BIGINT");
+                            break;
+                    }
+                    cols.Insert(0, id);
+                }
+                if (index > 0)
+                {
+                    List<string> tableIsExist = new List<string>();
+                    for (int i = 0; i < cols.Count; i++)
+                        if (cols[i] != id)
+                            tableIsExist.Add(
+                            $"\tIF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = '{cols[i]}' AND Object_ID = Object_ID('{table}')){Environment.NewLine}" +
+                            $"\t\tBEGIN ALTER TABLE [dbo].[{table}] ADD {tableNotExists[i]}; END{Environment.NewLine}"
+                        );
+                    yield return string.Join(Environment.NewLine,
+                        $"-- TABLE: Check if {table} exists and create if it does not",
+                        $"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '{table}')",
+                        $"BEGIN",
+                        $"\tCREATE TABLE [dbo].[{table}] (",
+                        "\t\t" + string.Join($",{Environment.NewLine}\t\t", tableNotExists),
+                        "\t);",
+                        "END",
+                        "-- TABLE: Add new columns if the table exists",
+                        "ELSE",
+                        "BEGIN",
+                        string.Join(Environment.NewLine, tableIsExist),
+                        "END;"
+                    );
+                    int c = idindex<0?1:0;
+                    for (long i = ColumnsLabelsIndex + 1; i < LinesCount; i += 100)
+                        yield return string.Join(Environment.NewLine,
+                            $"-- ROW: Insert or replace sample rows into {table}",
+                            $"MERGE [dbo].[{table}] AS target",
+                            "USING (VALUES",
+                                "\t(" + string.Join($"),{Environment.NewLine}\t(",
+                                from row in ReadRecords(i).Take(100)
+                                where (c = (idindex < 0 ? 1 : 0)) >= 0
+                                select
+                                    string.Join(", ",
+                                        (idindex < 0 ? new string[] { "null" } : new string[] { }).Concat
+                                        (
+                                            from cell in row
+                                            where types.Count > c
+                                            let t = types[c++]
+                                            select
+                                                freetypes.Contains(t) ? 
+                                                    string.IsNullOrWhiteSpace(cell.Value)? "null":cell.Value :
+                                                string.IsNullOrEmpty(cell.Value) ? "null" :
+                                                ("'" + ((Regex.IsMatch(cell.Value,"\\d+")?StringService.Compress(cell.Value,ConvertService.TryToInt(Regex.Match(cell.Value, "\\d+").Value,cell.Value.Length)) :cell.Value).Replace("'", "''")) + "'")
+                                        )
+                                    )
+                            ) + ")",
+                            ") AS source (" +
+                            string.Join(", ", cols) + ")",
+                            $"ON target.{id} = source.{id}",
+                            "WHEN MATCHED THEN",
+                            "\tUPDATE SET",
+                            "\t\t" + string.Join($",{Environment.NewLine}\t\t", from c1 in cols where c1 != id select $"target.{c1} = source.{c1}"),
+                            "WHEN NOT MATCHED THEN",
+                            "\tINSERT (" + string.Join(", ", idindex<0? cols.Where(v=>v != id): cols) + ")",
+                            "\tVALUES (" + string.Join(", ", from c2 in idindex < 0 ? cols.Where(v => v != id) : cols select $"source.{c2}") + ");"
+                        );
+                }
+            }
+        }
+
+        #endregion
     }
 }

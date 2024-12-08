@@ -12,7 +12,7 @@ namespace MiMFa.Engine.Web
     public interface IPointerJSSupported
     {
         PointerJS GetPointerJS();
-        PointerJS GetPointerJS(string pointer, PointerMode pointerType);
+        PointerJS GetPointerJS(object pointer, PointerMode pointerType);
         PointerJS GetPointerJS(long x, long y);
         PointerJS GetPointerJS(string query);
     }

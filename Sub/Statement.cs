@@ -70,7 +70,19 @@ namespace MiMFa
         {
             long index = 0;
             while (index++ < length)
-               yield return action();
+                yield return action();
+        }
+        public static IEnumerable<TOut> Loop<TOut>(long length, Func<long, TOut> action)
+        {
+            long index = 0;
+            while (index++ < length)
+                yield return action(index);
+        }
+        public static IEnumerable<TOut> Loop<TOut>(int length, Func<int, TOut> action)
+        {
+            int index = 0;
+            while (index++ < length)
+                yield return action(index);
         }
         public static void Loop(long length, Action action)
         {

@@ -12,13 +12,12 @@ namespace MiMFa.Engine.Web
 {
     public class PointerJS : IEnumerable<PointerJS>
     {
-        public string Pointer { get; set; } = null;
+        public object Pointer { get; set; } = null;
         public PointerMode Mode { get; set; } = PointerMode.Pure;
         public Func<string, IEnumerable<object>, object> Execute { get; set; } = (s,a) => s;
         public object Evaluate(string code) => Execute(code,new object[] { });
         public PointerJS Sequence { get; set; } = null;
         public PointerJS Source { get; set; } = null;
-        public string Script { get; set; } = null;
 
         public bool _Multiple { get; set; } = false;
         public bool _AccessToJQuery { get; set; } = false;
@@ -30,7 +29,7 @@ namespace MiMFa.Engine.Web
             Source = source;
             Initialize();
         }
-        public PointerJS(string pointer, PointerMode mode = PointerMode.Query, bool all = false, PointerJS source = null)
+        public PointerJS(object pointer, PointerMode mode = PointerMode.Query, bool all = false, PointerJS source = null)
         {
             Mode = mode;
             Pointer = pointer;
@@ -38,7 +37,7 @@ namespace MiMFa.Engine.Web
             Source = source;
             Initialize();
         }
-        public PointerJS(string pointer, Func<string, IEnumerable<object>, object> executer, PointerMode mode = PointerMode.Query, bool all = false, PointerJS source = null)
+        public PointerJS(object pointer, Func<string, IEnumerable<object>, object> executer, PointerMode mode = PointerMode.Query, bool all = false, PointerJS source = null)
         {
             Execute = executer;
             Mode = mode;
@@ -56,15 +55,16 @@ namespace MiMFa.Engine.Web
             Source = source;
             Initialize();
         }
-        public PointerJS(PointerJS pointer, bool? all = null) : this(pointer, pointer.Script, all)
+        public PointerJS(PointerJS pointer, string script, bool? all = null) : this(pointer, all)
         {
-        }
-        public PointerJS(PointerJS pointer, string script, bool? all = null) : this(pointer.Pointer, pointer.Execute, pointer.Mode, all ?? pointer._Multiple, pointer.Source)
-        {
-            Sequence = pointer.Sequence;
-            Script = script;
+            Mode = PointerMode.Pure;
+            Pointer = script;
             _AccessToJQuery = pointer._AccessToJQuery;
             Initialize();
+        }
+        public PointerJS(PointerJS pointer, bool? all = null) : this(pointer.Pointer, pointer.Execute, pointer.Mode, all ?? pointer._Multiple, pointer.Source?? new PointerJS("document", pointer.Execute, PointerMode.Pure))
+        {
+            Sequence = pointer.Sequence;
         }
 
         public PointerJS Clone() => new PointerJS(this);
@@ -77,7 +77,7 @@ namespace MiMFa.Engine.Web
 
         public string ElementPointer()
         {
-            var source = Source == null?"document": Source.ToString();
+            var source = Source == null?"":Source.ToScript();
             _Multiple = false;
             switch (Mode)
             {
@@ -90,19 +90,19 @@ namespace MiMFa.Engine.Web
                 case PointerMode.Class:
                     return string.Join("", source, ".getElementsByClassName(", ToScript(Pointer), ")[0]");
                 case PointerMode.Location:
-                    return string.Join("", source, ".elementFromPoint(", ToScript(Pointer), ")");
+                    return string.Join("", source, ".elementFromPoint(", Pointer, ")");
                 case PointerMode.Query:
                     return string.Join("", source, ".querySelector(", ToScript(Pointer), ")");
                 case PointerMode.XPath:
                     return string.Join("", source, ".evaluate(", ToScript(Pointer), ", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue");
                 case PointerMode.Pure:
                 default:
-                    return Pointer;
+                    return Pointer+"";
             }
         }
         public string ElementsPointer()
         {
-            var source = Source ==null?"document": Source.ToString();
+            var source = Source == null ? "" : Source.ToScript();
             _Multiple = false;
             switch (Mode)
             {
@@ -115,13 +115,13 @@ namespace MiMFa.Engine.Web
                 case PointerMode.Class:
                     return string.Join("", source, ".getElementsByClassName(", ToScript(Pointer), ")");
                 case PointerMode.Location:
-                    return string.Join("", source, ".elementsFromPoint(", ToScript(Pointer), ")");
+                    return string.Join("", source, ".elementsFromPoint(", Pointer, ")");
                 case PointerMode.Query:
                     return string.Join("", source, ".querySelectorAll(", ToScript(Pointer), ")");
                 case PointerMode.XPath:
                     return string.Join("", "Array.from((function*(){ let iterator = ", source, ".evaluate(", ToScript(Pointer), ", document, null, XPathResult.UNORDERED_NODE_ITERATOR_TYPE, null); let current = iterator.iterateNext(); while(current){ yield current; current = iterator.iterateNext(); }  })())");
                 default:
-                    return Pointer;
+                    return Pointer+"";
             }
         }
 
@@ -142,7 +142,7 @@ namespace MiMFa.Engine.Web
         /// <param name="format">{0} is the current Script</param>
         /// <param name="otherArgs">{0} and next arguments used in 'format'</param>
         /// <returns></returns>
-        public PointerJS Format(string format = "{0}", params string[] otherArgs) => new PointerJS(this, string.Format(format, new string[] { ToString() }.Concat(otherArgs).ToArray()));
+        public PointerJS Format(string format = "{0}", params string[] otherArgs) => new PointerJS(this, string.Format(format, new string[] { ToSnippet() }.Concat(otherArgs).ToArray()));
 
         public async Task<object> PerformAsync(params object[] args) => await ProcessService.RunTask<object, object>(o => Perform(args));
         public Task PerformTask(params object[] args) => ProcessService.RunTask(() => Perform(args));
@@ -192,28 +192,6 @@ namespace MiMFa.Engine.Web
             return new PointerJS(pName,Execute, PointerMode.Pure);
         }
 
-        /// <summary>
-        /// Add this pointer to sequence and continue with nextPointer
-        /// </summary>
-        /// <param name="nextPointer">the next pointer</param>
-        /// <returns>Updated Pointer</returns>
-        public PointerJS Also(PointerJS nextPointer) 
-        { 
-            nextPointer.Sequence = this;
-            return nextPointer;
-        }
-        /// <summary>
-        /// Add this pointer to sequence and continue with nextPointer
-        /// </summary>
-        /// <param name="nextCode">the next code to select</param>
-        /// <returns>Updated Pointer</returns>
-        public virtual PointerJS Also(string nextCode) => new PointerJS(this, nextCode, null) { Sequence=this };
-        /// <summary>
-        /// Add this pointer to sequence and continue with a new null pointer
-        /// </summary>
-        /// <returns>Updated Pointer</returns>
-        public PointerJS Also() => Also("");
-
         public PointerJS SelectPure(string pointer, bool all = false) => Select(pointer, PointerMode.Pure, all);
         public PointerJS SelectById(string pointer, bool all = false) => Select(pointer, PointerMode.Id, all);
         public PointerJS SelectByTag(string pointer, bool all = false) => Select(pointer, PointerMode.Tag, all);
@@ -228,16 +206,11 @@ namespace MiMFa.Engine.Web
         public PointerJS Select(long x, long y, Func<string, IEnumerable<object>, object> executer, bool all = false) => Select(new PointerJS(x,y, executer, all, Source));
         public PointerJS Select(string pointer, PointerMode pointerMode = PointerMode.Query, bool all = false) => Select(new PointerJS(pointer, Execute, pointerMode, all,Source));
         public PointerJS Select(long x, long y, bool all = false) => Select(new PointerJS(x, y, Execute, all, Source));
-        public PointerJS Select() => Select(this);
         public virtual PointerJS Select(PointerJS pointer)
         {
-            Pointer = pointer.Pointer;
-            Mode = pointer.Mode;
-            Execute = pointer.Execute;
-            _Multiple = pointer._Multiple;
-            Source = pointer.Source??Source;
-            Script = null;
-            return this;
+            pointer.Execute = Execute ?? pointer.Execute;
+            pointer.Source = pointer.Source ?? Source;
+            return Append(pointer);
         }
 
         public PointerJS FromPure(string pointer, bool all = false) => From(pointer, PointerMode.Pure, all);
@@ -254,12 +227,29 @@ namespace MiMFa.Engine.Web
         public PointerJS From(long x, long y, Func<string, IEnumerable<object>, object> executer, bool all = false) => From(new PointerJS(x, y, executer, all));
         public PointerJS From(string pointer, PointerMode pointerMode = PointerMode.Query, bool all = false) => From(new PointerJS(pointer, Execute, pointerMode, all));
         public PointerJS From(long x, long y, bool all = false) => From(new PointerJS(x, y, Execute, all));
-        public PointerJS From() => From(this);
         public virtual PointerJS From(PointerJS pointer)
         {
-            Source = pointer;
-            return this;
+            pointer.Execute = Execute ?? pointer.Execute;
+            return new PointerJS(this) { Source = pointer };
         }
+
+        /// <summary>
+        /// Add this pointer to sequence and continue with nextPointer
+        /// </summary>
+        /// <param name="nextPointer">the next pointer</param>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS Also(PointerJS nextPointer) => Also(nextPointer.ToScript());
+        /// <summary>
+        /// Add this pointer to sequence and continue with nextPointer
+        /// </summary>
+        /// <param name="nextCode">the next code to select</param>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS Also(string nextCode) => Append(new PointerJS(nextCode, Execute, PointerMode.Pure) { Source = this.Source });
+        /// <summary>
+        /// Add this pointer to sequence and continue with a new null pointer
+        /// </summary>
+        /// <returns>Updated Pointer</returns>
+        public PointerJS Also() => Also(";");
 
 
         /// <summary>
@@ -284,7 +274,7 @@ namespace MiMFa.Engine.Web
         /// </summary>
         /// <param name="nextPointer">other pointer</param>
         /// <returns>Updated Pointer</returns>
-        public PointerJS With(PointerJS nextPointer) => With(nextPointer == null ? ToScript(null) : nextPointer.ToString());
+        public PointerJS With(PointerJS nextPointer) => With(nextPointer == null ? ToScript(null) : nextPointer.ToSnippet());
 
         /// <summary>
         /// {0}.nextCode
@@ -313,7 +303,7 @@ namespace MiMFa.Engine.Web
         /// </summary>
         /// <param name="nextPointer">other pointer</param>
         /// <returns>Updated Pointer</returns>
-        public PointerJS On(PointerJS nextPointer) => On(nextPointer == null ? ToScript(null) : nextPointer.ToString());
+        public PointerJS On(PointerJS nextPointer) => On(nextPointer == null ? ToScript(null) : nextPointer.ToSnippet());
 
         /// <summary>
         /// {0}.nextCode(args)
@@ -357,7 +347,7 @@ namespace MiMFa.Engine.Web
         /// <param name="nextPointer">other pointer</param>
         /// <param name="args">the function arguments</param>
         /// <returns>Updated Pointer</returns>
-        public PointerJS On(PointerJS nextPointer, string args) => On(nextPointer == null ? ToScript(null) : nextPointer.ToString(), args);
+        public PointerJS On(PointerJS nextPointer, string args) => On(nextPointer == null ? ToScript(null) : nextPointer.ToSnippet(), args);
 
         /// <summary>
         /// {0}.nextCode(args)
@@ -365,21 +355,21 @@ namespace MiMFa.Engine.Web
         /// <param name="nextCode">a code snippet</param>
         /// <param name="args">the function arguments</param>
         /// <returns>Updated Pointer</returns>
-        public virtual PointerJS On(string nextCode, PointerJS args) => On(nextCode, args.ToString());
+        public virtual PointerJS On(string nextCode, PointerJS args) => On(nextCode, args.ToSnippet());
         /// <summary>
         /// {0}[index](args)
         /// </summary>
         /// <param name="index">thw item index</param>
         /// <param name="args">the function arguments</param>
         /// <returns>Updated Pointer</returns>
-        public virtual PointerJS On(int index, PointerJS args) => On(index.ToString(), args.ToString());
+        public virtual PointerJS On(int index, PointerJS args) => On(index.ToString(), args.ToSnippet());
         /// <summary>
         /// {0}.nextPointer(args)
         /// </summary>
         /// <param name="nextPointer">other pointer</param>
         /// <param name="args">the function arguments</param>
         /// <returns>Updated Pointer</returns>
-        public PointerJS On(PointerJS nextPointer, PointerJS args) => On(nextPointer == null ? ToScript(null) : nextPointer.ToString(), args.ToString());
+        public PointerJS On(PointerJS nextPointer, PointerJS args) => On(nextPointer == null ? ToScript(null) : nextPointer.ToSnippet(), args.ToSnippet());
 
         /// <summary>
         /// {0}\r\ncode
@@ -402,7 +392,7 @@ namespace MiMFa.Engine.Web
         /// </summary>
         /// <param name="pointer">other pointer</param>
         /// <returns>Updated Pointer</returns>
-        public PointerJS Then(PointerJS pointer) => Then(pointer == null ? ToScript(null) : pointer.ToString());
+        public PointerJS Then(PointerJS pointer) => Then(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         /// <summary>
         /// {0};\r\nnextCode
@@ -425,16 +415,25 @@ namespace MiMFa.Engine.Web
         /// </summary>
         /// <param name="nextPointer">the next pointer</param>
         /// <returns>Updated Pointer</returns>
-        public PointerJS Follows(PointerJS nextPointer) => Follows(nextPointer == null ? ToScript(null) : nextPointer.ToString());
+        public PointerJS Follows(PointerJS nextPointer) => Follows(nextPointer == null ? ToScript(null) : nextPointer.ToSnippet());
 
         public virtual PointerJS Prepend(object value) => Prepend(ToScript(value));
-        public virtual PointerJS Prepend(string code) => new PointerJS(this, code + ToString());
-        public PointerJS Prepend(PointerJS pointer) => Prepend(pointer == null ? ToScript(null) : pointer.ToString());
+        public virtual PointerJS Prepend(string code) => Prepend(new PointerJS(code, Execute, PointerMode.Pure));
+        public PointerJS Prepend(PointerJS pointer) 
+        {
+            if (Sequence == null) Sequence = pointer;
+            else Sequence.Prepend(pointer);
+            return this;
+        }
 
         public virtual PointerJS Append(object value) => Append(ToScript(value));
-        public virtual PointerJS Append(string code) => new PointerJS(this, ToString());
-        public PointerJS Append(PointerJS pointer) => Append(pointer == null ? ToScript(null) : pointer.ToString());
-
+        public virtual PointerJS Append(string code) => Append(new PointerJS(code, Execute, PointerMode.Pure));
+        public PointerJS Append(PointerJS pointer)
+        {
+            if (pointer.Sequence == null) pointer.Sequence = this;
+            else pointer.Sequence.Append(this);
+            return pointer;
+        }
 
         public virtual PointerJS A() => new PointerJS(this);
         public virtual PointerJS One() => new PointerJS(this, false);
@@ -469,11 +468,11 @@ namespace MiMFa.Engine.Web
         public virtual PointerJS Join(object value) => Join(ToScript(value));
         public virtual PointerJS Join(string code) => Format("{0},{1}", code);
         public virtual PointerJS Join() => Format("{0},");
-        public PointerJS Join(PointerJS pointer) => Join(pointer == null ? ToScript(null) : pointer.ToString());
+        public PointerJS Join(PointerJS pointer) => Join(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         public virtual PointerJS Join(string name,object value) => Join(name, ToScript(value));
         public virtual PointerJS Join(string name,string code) => Format("{0},{1}:{2}", ToScript(name), code);
-        public PointerJS Join(string name, PointerJS pointer) => Join(name, pointer == null ? ToScript(null) : pointer.ToString());
+        public PointerJS Join(string name, PointerJS pointer) => Join(name, pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         public PointerJS Collect() => Format("{{0}}");
         public PointerJS Array() => Format("[{0}]");
@@ -505,7 +504,7 @@ namespace MiMFa.Engine.Web
         /// </summary>
         /// <param name="pointer">other pointer</param>
         /// <returns>Updated Pointer</returns>
-        public PointerJS Yield(PointerJS pointer) => Yield(pointer == null ? ToScript(null) : pointer.ToString());
+        public PointerJS Yield(PointerJS pointer) => Yield(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         /// <summary>
         /// {0}; return code
@@ -528,51 +527,51 @@ namespace MiMFa.Engine.Web
         /// </summary>
         /// <param name="pointer">other pointer</param>
         /// <returns>Updated Pointer</returns>
-        public PointerJS Return(PointerJS pointer) => Return(pointer == null ? ToScript(null) : pointer.ToString());
+        public PointerJS Return(PointerJS pointer) => Return(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         public virtual PointerJS If(object condition) => If(ToScript(condition));
         public virtual PointerJS If(string conditionCode) => Format("\r\nif({1}) ", conditionCode).Then(this);
         public virtual PointerJS If() => Format("\r\nif({0}) ");
-        public PointerJS If(PointerJS pointer) => If(pointer == null ? ToScript(null) : pointer.ToString());
+        public PointerJS If(PointerJS pointer) => If(pointer == null ? ToScript(null) : pointer.ToSnippet());
         public virtual PointerJS Else(object value) => Else().Then(value);
         public virtual PointerJS Else(string code) => Else().Then(code);
         public virtual PointerJS Else() => Format("{0}\r\nelse ");
-        public PointerJS Else(PointerJS pointer) => Else(pointer == null ? ToScript(null) : pointer.ToString());
+        public PointerJS Else(PointerJS pointer) => Else(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         public virtual PointerJS Where(object condition) => Where(ToScript(condition));
         public virtual PointerJS Where(string conditionCode) => Format("({1})? ", conditionCode).With(this);
         public virtual PointerJS Where() => Format("({0})? ");
-        public PointerJS Where(PointerJS pointer) => Where(pointer == null ? ToScript(null) : pointer.ToString());
+        public PointerJS Where(PointerJS pointer) => Where(pointer == null ? ToScript(null) : pointer.ToSnippet());
         public virtual PointerJS ElseWhere(object value) => ElseWhere(ToScript(value));
         public virtual PointerJS ElseWhere(string code) => ElseWhere().With(code);
         public virtual PointerJS ElseWhere() => Format("{0} : ");
-        public PointerJS ElseWhere(PointerJS pointer) => ElseWhere(pointer==null?ToScript(null):pointer.ToString());
+        public PointerJS ElseWhere(PointerJS pointer) => ElseWhere(pointer==null?ToScript(null):pointer.ToSnippet());
 
         public virtual PointerJS While(object condition) => While(ToScript(condition));
         public virtual PointerJS While(string conditionCode) => Format("\r\nwhile({1}) ", conditionCode).Then(this);
         public virtual PointerJS While() => Format("\r\nwhile({0}) ");
-        public PointerJS While(PointerJS pointer) => While(pointer == null ? ToScript(null) : pointer.ToString());
+        public PointerJS While(PointerJS pointer) => While(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         public virtual PointerJS When(object condition) => When(ToScript(condition));
         public virtual PointerJS When(string conditionCode) => Format("\r\ndo {{0}}\r\nwhile({1});", conditionCode);
-        public PointerJS When(PointerJS pointer) => When(pointer == null ? ToScript(null) : pointer.ToString());
+        public PointerJS When(PointerJS pointer) => When(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         public virtual PointerJS ForEach(string elementName, object collection) => ForEach(elementName, ToScript(collection));
         public virtual PointerJS ForEach(string elementName, string collectionCode) => Format("\r\nfor(let {1} of {2}) ", elementName, collectionCode).Then(this);
         public virtual PointerJS ForEach(string elementName) => Format("\r\nfor(let {1} of {0}) ", elementName);
         public virtual PointerJS ForEach() => Format("\r\nfor(let {1} of {0}) {1}", "element");
-        public PointerJS ForEach(string elementName, PointerJS pointer) => ForEach(elementName, pointer == null ? ToScript(null) : pointer.ToString());
+        public PointerJS ForEach(string elementName, PointerJS pointer) => ForEach(elementName, pointer == null ? ToScript(null) : pointer.ToSnippet());
         
         public virtual PointerJS ForIn(string elementName, object collection) => ForIn(elementName, ToScript(collection));
         public virtual PointerJS ForIn(string elementName, string collectionCode) => Format("\r\nfor(let {1} in {2}) ", elementName, collectionCode).Then(this);
         public virtual PointerJS ForIn(string elementName) => Format("\r\nfor(let {1} in {0}) ", elementName);
         public virtual PointerJS ForIn() => Format("\r\nfor(let {1} in {0}) {1}", "element");
-        public PointerJS ForIn(string elementName, PointerJS pointer) => ForIn(elementName, pointer == null ? ToScript(null) : pointer.ToString());
+        public PointerJS ForIn(string elementName, PointerJS pointer) => ForIn(elementName, pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         public virtual PointerJS As(string elementName,object value) => As(elementName, ToScript(value));
         public virtual PointerJS As(string elementName, string code) => Format("(({1})=>{2})({0})", elementName, code);
         public virtual PointerJS As(string elementName) => Format("{1} = (()=>{{{0}}})()", elementName);
-        public PointerJS As(string elementName, PointerJS nextPointer) => As(elementName, nextPointer == null ? ToScript(null) : nextPointer.ToString());
+        public PointerJS As(string elementName, PointerJS nextPointer) => As(elementName, nextPointer == null ? ToScript(null) : nextPointer.ToSnippet());
        
         public virtual PointerJS Var(string elementName) => Format("{0}\r\nvar {1}", elementName);
         public virtual PointerJS Let(string elementName) => Format("{0}\r\nlet {1}", elementName);
@@ -582,40 +581,40 @@ namespace MiMFa.Engine.Web
         public virtual PointerJS Equal(object value) => Format("{0}={1}", ToScript(value));
         public virtual PointerJS Equal(string code) => Format("{0}={1}", code);
         public virtual PointerJS Equal() => Format("{0}=");
-        public virtual PointerJS Equal(PointerJS pointer) => Equal(pointer == null ? ToScript(null) : pointer.ToString());
+        public virtual PointerJS Equal(PointerJS pointer) => Equal(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         public virtual PointerJS Minus(object value) => Minus(ToScript(value));
         public virtual PointerJS Minus(string code) => Format("{0}-{1}", code);
         public virtual PointerJS Minus() => Format("{0}-");
-        public virtual PointerJS Minus(PointerJS pointer) => Minus(pointer == null ? ToScript(null) : pointer.ToString());
+        public virtual PointerJS Minus(PointerJS pointer) => Minus(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         public virtual PointerJS Plus(object value) => Plus(ToScript(value));
         public virtual PointerJS Plus(string code) => Format("{0}+{1}", code);
         public virtual PointerJS Plus() => Format("{0}+");
-        public virtual PointerJS Plus(PointerJS pointer) => Plus(pointer == null ? ToScript(null) : pointer.ToString());
+        public virtual PointerJS Plus(PointerJS pointer) => Plus(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         public virtual PointerJS Multiple(object value) => Multiple(ToScript(value));
         public virtual PointerJS Multiple(string code) => Format("{0}*{1}", code);
         public virtual PointerJS Multiple() => Format("{0}*");
-        public virtual PointerJS Multiple(PointerJS pointer) => Multiple(pointer == null ? ToScript(null) : pointer.ToString());
+        public virtual PointerJS Multiple(PointerJS pointer) => Multiple(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         public virtual PointerJS Divide(object value) => Divide(ToScript(value));
         public virtual PointerJS Divide(string code) => Format("{0}/{1}", code);
         public virtual PointerJS Divide() => Format("{0}/");
-        public virtual PointerJS Divide(PointerJS pointer) => Divide(pointer == null ? ToScript(null) : pointer.ToString());
+        public virtual PointerJS Divide(PointerJS pointer) => Divide(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         public virtual PointerJS Power(object value) => Power(ToScript(value));
         public virtual PointerJS Power(string code) => Format("{0}**{1}", code);
         public virtual PointerJS Power() => Format("{0}**");
-        public virtual PointerJS Power(PointerJS pointer) => Power(pointer == null ? ToScript(null) : pointer.ToString());
+        public virtual PointerJS Power(PointerJS pointer) => Power(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         public virtual PointerJS And(object value) => And(ToScript(value));
         public virtual PointerJS And(string code = "true") => Format("({0} && {1})", code);
-        public PointerJS And(PointerJS pointer) => And(pointer == null ? ToScript(null) : pointer.ToString());
+        public PointerJS And(PointerJS pointer) => And(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         public virtual PointerJS Or(object value) => Or(ToScript(value));
         public virtual PointerJS Or(string code = "true") => Format("({0} || {1})", code);
-        public PointerJS Or(PointerJS pointer) => Or(pointer == null ? ToScript(null) : pointer.ToString());
+        public PointerJS Or(PointerJS pointer) => Or(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         public virtual PointerJS Null() => Format("{0} null");
         public virtual PointerJS Nothing() => Format("{0} (()=>{{}})()");
@@ -639,7 +638,7 @@ namespace MiMFa.Engine.Web
         /// {0}!=pointer
         /// </summary>
         /// <returns>Updated Pointer</returns>
-        public PointerJS Not(PointerJS pointer) => Not(pointer == null ? ToScript(null) : pointer.ToString());
+        public PointerJS Not(PointerJS pointer) => Not(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         /// <summary>
         /// {0} === code
@@ -662,7 +661,7 @@ namespace MiMFa.Engine.Web
         /// </summary>
         /// <param name="pointer">other pointer</param>
         /// <returns>Updated Pointer</returns>
-        public PointerJS Is(PointerJS pointer) => Is(pointer == null ? ToScript(null) : pointer.ToString());
+        public PointerJS Is(PointerJS pointer) => Is(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         /// <summary>
         /// ({0}===code)
@@ -685,7 +684,7 @@ namespace MiMFa.Engine.Web
         /// </summary>
         /// <param name="pointer">other pointer</param>
         /// <returns>Updated Pointer</returns>
-        public PointerJS IsEqual(PointerJS pointer) => IsEqual(pointer == null ? ToScript(null) : pointer.ToString());
+        public PointerJS IsEqual(PointerJS pointer) => IsEqual(pointer == null ? ToScript(null) : pointer.ToSnippet());
 
         public virtual PointerJS IsVisible() => IsHidden().Not();
         public virtual PointerJS IsHidden() => As("element", "element === null || element === undefined || element.offsetLeft < 0").Or(GetStyle().As("element","element.visibility === 'hidden' || element.display === 'none'"));
@@ -753,7 +752,7 @@ namespace MiMFa.Engine.Web
         public virtual PointerJS CloneNode(bool withChildren = true) => With(".cloneNode(" + (withChildren + "").ToLower() + ")");
 
 
-        public virtual PointerJS Replace(PointerJS pointer) => Parent().With(".replaceChild(" + (pointer == null ? ToScript(null) : pointer.ToString()) + ","+ToString()+")");
+        public virtual PointerJS Replace(PointerJS pointer) => Parent().With(".replaceChild(" + (pointer == null ? ToScript(null) : pointer.ToSnippet()) + ","+ToSnippet()+")");
         public virtual PointerJS Remove() => With(".remove()");
         public virtual PointerJS Closest(string query) => With(".closest(" + ToScript(query) + ")");
         public virtual PointerJS Matches(string query) => With(".matches(" + ToScript(query) + ")");
@@ -770,7 +769,7 @@ namespace MiMFa.Engine.Web
         public virtual PointerJS Get(int index) => With("[" + index + "]");
         public virtual PointerJS Get(params int[] indeces) => With("[" + string.Join("][", indeces) + "]");
         public virtual PointerJS Get(string name) => With("[" + ToScript(name) + "]");
-        public virtual PointerJS Set(PointerJS pointer) => With("=" + (pointer == null ? ToScript(null) : pointer.ToString()));
+        public virtual PointerJS Set(PointerJS pointer) => With("=" + (pointer == null ? ToScript(null) : pointer.ToSnippet()));
         public virtual PointerJS Get() => new PointerJS(this);
 
         public virtual PointerJS Set(object value) => Set(ToScript(value));
@@ -786,11 +785,11 @@ namespace MiMFa.Engine.Web
         public virtual PointerJS SetParent(PointerJS pointer) => GetParent().Set(pointer);
         public virtual PointerJS GetChild(int index) => Children().Get(index);
         public virtual PointerJS SetChild(int index,PointerJS pointer) => GetChild(index).Set(pointer);
-        public virtual PointerJS ReplaceChild(int index,PointerJS pointer) => As("element", "element.replaceChild("+(pointer == null ? ToScript(null) : pointer.ToString())+",element.children[" + index + "])");
-        public virtual PointerJS RemoveChild(PointerJS pointer) => With(".removeChild("+ (pointer == null ? ToScript(null) : pointer.ToString()) + ")");
+        public virtual PointerJS ReplaceChild(int index,PointerJS pointer) => As("element", "element.replaceChild("+(pointer == null ? ToScript(null) : pointer.ToSnippet())+",element.children[" + index + "])");
+        public virtual PointerJS RemoveChild(PointerJS pointer) => With(".removeChild("+ (pointer == null ? ToScript(null) : pointer.ToSnippet()) + ")");
         public virtual PointerJS RemoveChild(int index) => As("element", "element.removeChild(element.children[" + index + "])");
         public virtual PointerJS HasChild() => With(".hasChildNodes()");
-        public virtual PointerJS HasChild(PointerJS pointer) => With(".contains(" + (pointer == null ? ToScript(null) : pointer.ToString()) + ")");
+        public virtual PointerJS HasChild(PointerJS pointer) => With(".contains(" + (pointer == null ? ToScript(null) : pointer.ToSnippet()) + ")");
         public virtual PointerJS HasChild(int index) => Children().With(".length>"+ index);
         public virtual PointerJS GetAttribute(string name) => With(".getAttribute("+ ToScript(name) +")");
         public virtual PointerJS SetAttribute(string name, object value) => With(".setAttribute(" + ToScript(name) +","+ ToScript(value) + ")");
@@ -821,26 +820,34 @@ namespace MiMFa.Engine.Web
         public virtual PointerJS SetShadowRoot(string mode="closed") => Format(".attachShadow({{mode:{1}}})", ToScript(mode));
 
 
-
-        public override string ToString()
+        public virtual string ToSnippet()
         {
-            if (_Multiple) return string.Join("",
-                "Array.from((function*(elements) { for(let element of elements) yield (()=>",
-                    string.IsNullOrWhiteSpace(Script) ? "element" : Script,
-                ")()})(", ElementsPointer(), "))"
-            );
-            else return string.IsNullOrWhiteSpace(Script) ? ElementPointer() : Script;
+            if (_Multiple) return $"Array.from((function*(elements) {{ for(let element of elements) yield (()=>element)()}})({ElementsPointer()}))";
+            else return ElementPointer();
         }
         public virtual string ToScript() =>
-            (Sequence == null ? "" : Sequence.ToScript()) +
-            (Source == null ? "" : (Source._Multiple ? Source.ElementsPointer() : Source.ElementPointer())) + ToString();
-       
+            (Sequence == null ? "" : Sequence.ToScript()) + ToSnippet();
         public static string ToScript(object value) =>
             value == null ? "null" :
             value is string ? string.Join("", "`", (value + "").Replace("`", "\\`"), "`") :
             value is bool ? value.ToString().ToLower() :
             value is IEnumerable ? "[" + string.Join(",", Statement.Loop((IEnumerable)value, (v) => ToScript(v))) + "]" :
+            value is PointerJS ? ((PointerJS)value).ToScript() :
             value + "";
+
+
+        public virtual T Parse<T>(T defaultValue = default(T)) => TryPerform(defaultValue);
+
+        public override string ToString() => TryPerform("");
+
+        public static implicit operator string(PointerJS pointer) => pointer.TryPerform(string.Empty);
+        public static implicit operator bool(PointerJS pointer) => pointer.TryPerform(false);
+        public static implicit operator short(PointerJS pointer) => pointer.TryPerform((short)0);
+        public static implicit operator int(PointerJS pointer) => pointer.TryPerform(0);
+        public static implicit operator long(PointerJS pointer) => pointer.TryPerform(0L);
+        public static implicit operator float(PointerJS pointer) => pointer.TryPerform(0F);
+        public static implicit operator double(PointerJS pointer) => pointer.TryPerform(0D);
+        public static implicit operator decimal(PointerJS pointer) => pointer.TryPerform(0M);
 
         public IEnumerator<PointerJS> GetEnumerator()
         {
@@ -857,13 +864,5 @@ namespace MiMFa.Engine.Web
                 yield return pointer.Get(index++);
         }
 
-        public static implicit operator bool(PointerJS pointer) => pointer.TryPerform(false);
-        public static implicit operator string(PointerJS pointer) => pointer.TryPerform("");
-        public static implicit operator short(PointerJS pointer) => pointer.TryPerform<short>(0);
-        public static implicit operator int(PointerJS pointer) => pointer.TryPerform(0);
-        public static implicit operator long(PointerJS pointer) => pointer.TryPerform(0l);
-        public static implicit operator float(PointerJS pointer) => pointer.TryPerform(0F);
-        public static implicit operator double(PointerJS pointer) => pointer.TryPerform(0d);
-        public static implicit operator decimal(PointerJS pointer) => pointer.TryPerform(0m);
     }
 }

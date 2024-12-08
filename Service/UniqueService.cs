@@ -39,22 +39,22 @@ namespace MiMFa.Service
                 .Replace("15", "f");
             return name;
         }
-        public static double CreateNewDouble()
+        public static double CreateNewDouble(Random random = null)
         {
-            Random r = new Random();
-            return Convert.ToDouble(DateTime.Now.Ticks.ToString().Substring(12) + DateTime.Now.Millisecond + "" + r.Next(1111, 9999));
+            random = random??new Random();
+            return Convert.ToDouble(DateTime.Now.Ticks.ToString().Substring(12) + DateTime.Now.Millisecond + "" + random.Next(1111, 9999));
         }
-        public static long CreateNewLong()
+        public static long CreateNewLong(Random random = null)
         {
-            Random r = new Random();
+            random = random??new Random();
             string s = DateTime.Now.Ticks.ToString().Substring(8) + DateTime.Now.Millisecond;
-            s = s.Substring(s.Length - 4) + r.Next(1111, 9999);
+            s = s.Substring(s.Length - 4) + random.Next(1111, 9999);
             return Convert.ToInt32(s);
         }
-        public static int CreateRandom(int min = 11,int max = 99, int seed = 0)
+        public static int CreateRandom(int min = 11,int max = 99, Random random = null)
         {
-            Random r = seed == 0? new Random() :new Random(seed);
-            return r.Next(min,max);
+            random = random??new Random();
+            return random.Next(min,max);
         }
         public static bool CreateBoolean()
         {
