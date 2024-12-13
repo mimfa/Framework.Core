@@ -157,7 +157,8 @@ namespace MiMFa.Engine.Web
         public T TryPerform<T>(T defaultValue = default, params object[] args)
         {
             string s = ToScript();
-            if (!_Returnable && !Regex.IsMatch(s, @"^\s*return\b", RegexOptions.Multiline)) s = Return().ToScript();
+            if (!_Returnable && !Regex.IsMatch(s, @"^\s*return\b", RegexOptions.Multiline))
+                s = Return().ToScript();
             var o = Execute(s, args);
             return o is T? (T)o:defaultValue;
         }
@@ -194,7 +195,7 @@ namespace MiMFa.Engine.Web
         public virtual PointerJS PerformPointer(params object[] args)
         {
             var pName = "pointer_" + DateTime.Now.Ticks;
-            var val = Return().As(pName).Perform(args);
+            var val = _Returnable? As(pName).Perform(args):Return().As(pName).Perform(args);
             return new PointerJS(pName, Execute, PointerMode.Pure);
         }
 
