@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -20,7 +21,13 @@ namespace MiMFa.Engine.Web
         public PointerJS Source { get; set; } = null;
 
         public bool _Multiple { get; set; } = false;
-        public bool _AccessToJQuery { get; set; } = false;
+        public bool _Returnable { get; set; } = false;
+        public bool _IsWindow => Source == null || Source.Pointer != "document";
+        public bool _IsDocument => Pointer == null && Source != null && Pointer == "document";
+
+        public virtual PointerJS this[int index] { get => Get(index); set => Set(index, value).Perform(); }
+        public virtual PointerJS this[string name] { get => Get(name); set => Set(name, value).Perform(); }
+
 
         public PointerJS(Func<string, IEnumerable<object>, object> executer, bool all = false, PointerJS source = null)
         {
@@ -59,10 +66,9 @@ namespace MiMFa.Engine.Web
         {
             Mode = PointerMode.Pure;
             Pointer = script;
-            _AccessToJQuery = pointer._AccessToJQuery;
             Initialize();
         }
-        public PointerJS(PointerJS pointer, bool? all = null) : this(pointer.Pointer, pointer.Execute, pointer.Mode, all ?? pointer._Multiple, pointer.Source?? new PointerJS("document", pointer.Execute, PointerMode.Pure))
+        public PointerJS(PointerJS pointer, bool? all = null) : this(pointer.Pointer, pointer.Execute, pointer.Mode, all ?? pointer._Multiple, pointer.Source)
         {
             Sequence = pointer.Sequence;
         }
@@ -97,7 +103,7 @@ namespace MiMFa.Engine.Web
                     return string.Join("", source, ".evaluate(", ToScript(Pointer), ", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue");
                 case PointerMode.Pure:
                 default:
-                    return Pointer+"";
+                    return $"{source}{Pointer}";
             }
         }
         public string ElementsPointer()
@@ -142,7 +148,7 @@ namespace MiMFa.Engine.Web
         /// <param name="format">{0} is the current Script</param>
         /// <param name="otherArgs">{0} and next arguments used in 'format'</param>
         /// <returns></returns>
-        public PointerJS Format(string format = "{0}", params string[] otherArgs) => new PointerJS(this, string.Format(format, new string[] { ToSnippet() }.Concat(otherArgs).ToArray()));
+        public PointerJS Format(string format = "{0}", params string[] otherArgs) => new PointerJS(this, string.Format(format, new string[] { ToSnippet() }.Concat(otherArgs).ToArray())) { Source = null };
 
         public async Task<object> PerformAsync(params object[] args) => await ProcessService.RunTask<object, object>(o => Perform(args));
         public Task PerformTask(params object[] args) => ProcessService.RunTask(() => Perform(args));
@@ -150,10 +156,10 @@ namespace MiMFa.Engine.Web
         public Form PerformDialog(string message = "Wait until finish the process...", params object[] args) => ProcessService.RunDialog(message, (o, a) => Perform(args));      
         public T TryPerform<T>(T defaultValue = default, params object[] args)
         {
-            var o = Perform(args);
-            if (o is T)
-                return (T)o;
-            else return defaultValue;
+            string s = ToScript();
+            if (!_Returnable && !Regex.IsMatch(s, @"^\s*return\b", RegexOptions.Multiline)) s = Return().ToScript();
+            var o = Execute(s, args);
+            return o is T? (T)o:defaultValue;
         }
         public T Perform<T>(params object[] args) => (T)(Perform(args) ?? default(T));public void Perform(Action<object> process, params object[] args)
         {
@@ -188,8 +194,8 @@ namespace MiMFa.Engine.Web
         public virtual PointerJS PerformPointer(params object[] args)
         {
             var pName = "pointer_" + DateTime.Now.Ticks;
-            var val = As(pName).Perform(args);
-            return new PointerJS(pName,Execute, PointerMode.Pure);
+            var val = Return().As(pName).Perform(args);
+            return new PointerJS(pName, Execute, PointerMode.Pure);
         }
 
         public PointerJS SelectPure(string pointer, bool all = false) => Select(pointer, PointerMode.Pure, all);
@@ -206,11 +212,13 @@ namespace MiMFa.Engine.Web
         public PointerJS Select(long x, long y, Func<string, IEnumerable<object>, object> executer, bool all = false) => Select(new PointerJS(x,y, executer, all, Source));
         public PointerJS Select(string pointer, PointerMode pointerMode = PointerMode.Query, bool all = false) => Select(new PointerJS(pointer, Execute, pointerMode, all,Source));
         public PointerJS Select(long x, long y, bool all = false) => Select(new PointerJS(x, y, Execute, all, Source));
+        public PointerJS Select() => SelectPure(null);
         public virtual PointerJS Select(PointerJS pointer)
         {
             pointer.Execute = Execute ?? pointer.Execute;
-            pointer.Source = pointer.Source ?? Source;
-            return Append(pointer);
+            pointer.Sequence = Sequence;
+            Sequence = null;
+            return new PointerJS(pointer) { Source = this };
         }
 
         public PointerJS FromPure(string pointer, bool all = false) => From(pointer, PointerMode.Pure, all);
@@ -227,9 +235,12 @@ namespace MiMFa.Engine.Web
         public PointerJS From(long x, long y, Func<string, IEnumerable<object>, object> executer, bool all = false) => From(new PointerJS(x, y, executer, all));
         public PointerJS From(string pointer, PointerMode pointerMode = PointerMode.Query, bool all = false) => From(new PointerJS(pointer, Execute, pointerMode, all));
         public PointerJS From(long x, long y, bool all = false) => From(new PointerJS(x, y, Execute, all));
+        public PointerJS From() => FromPure(null);
         public virtual PointerJS From(PointerJS pointer)
         {
             pointer.Execute = Execute ?? pointer.Execute;
+            Sequence = pointer.Sequence;
+            pointer.Sequence = null;
             return new PointerJS(this) { Source = pointer };
         }
 
@@ -244,7 +255,7 @@ namespace MiMFa.Engine.Web
         /// </summary>
         /// <param name="nextCode">the next code to select</param>
         /// <returns>Updated Pointer</returns>
-        public PointerJS Also(string nextCode) => Append(new PointerJS(nextCode, Execute, PointerMode.Pure) { Source = this.Source });
+        public PointerJS Also(string nextCode) => Append(new PointerJS(nextCode, Execute, PointerMode.Pure)).Append(Source.Clone());
         /// <summary>
         /// Add this pointer to sequence and continue with a new null pointer
         /// </summary>
@@ -438,7 +449,7 @@ namespace MiMFa.Engine.Web
         public virtual PointerJS A() => new PointerJS(this);
         public virtual PointerJS One() => new PointerJS(this, false);
         public virtual PointerJS All() => new PointerJS(this, true);
-        public virtual PointerJS The() => All();
+        public virtual PointerJS The() => One();
         public virtual PointerJS The(string name) => All().Format("{0}['{1}']", name);
         public virtual PointerJS The(int index) => All().Format("{0}[{1}]", index.ToString());
         public virtual PointerJS First() => All().With("[0]");
@@ -446,24 +457,6 @@ namespace MiMFa.Engine.Web
 
         public virtual PointerJS Reverse() => With(".reverse()");
         public virtual PointerJS Slice(int index = 0, int? length = null) => With($".slice({index}" + (length == null ? ")" : $", {length})"));
-
-        public virtual bool Wait(long milisecond = 1000)
-        {
-            //return Not()
-            //    .And("(delay -= 1000)>0")
-            //    .While()
-            //    .Then("new Promise(resolve => setTimeout(resolve, 1000));")
-            //    .Prepend("let delay =" + milisecond + ";")
-            //    .Return(this)
-            //    .TryPerform(false);
-            var tick = DateTime.Now.Ticks + milisecond * 10000;
-            do
-            {
-                if (TryPerform(false)) return true;
-                Task.Delay(3000);
-            } while (tick > DateTime.Now.Ticks);
-            return false;
-        }
 
         public virtual PointerJS Join(object value) => Join(ToScript(value));
         public virtual PointerJS Join(string code) => Format("{0},{1}", code);
@@ -573,9 +566,9 @@ namespace MiMFa.Engine.Web
         public virtual PointerJS As(string elementName) => Format("{1} = (()=>{{{0}}})()", elementName);
         public PointerJS As(string elementName, PointerJS nextPointer) => As(elementName, nextPointer == null ? ToScript(null) : nextPointer.ToSnippet());
        
-        public virtual PointerJS Var(string elementName) => Format("{0}\r\nvar {1}", elementName);
-        public virtual PointerJS Let(string elementName) => Format("{0}\r\nlet {1}", elementName);
-        public virtual PointerJS Const(string elementName) => Format("{0}\r\nconst {1}", elementName);
+        public virtual PointerJS Var(string elementName) => new PointerJS(Format(";\r\nvar {1}", elementName)) { Source = this};
+        public virtual PointerJS Let(string elementName) => new PointerJS(Format(";\r\nlet {1}", elementName)) { Source = this };
+        public virtual PointerJS Const(string elementName) => new PointerJS(Format(";\r\nconst {1}", elementName)) { Source = this };
         public virtual PointerJS Named(string elementName) => Format("{1}:{0}", elementName);
 
         public virtual PointerJS Equal(object value) => Format("{0}={1}", ToScript(value));
@@ -696,16 +689,18 @@ namespace MiMFa.Engine.Web
 
         public virtual PointerJS SendKeys(string keys) => Scroll().Follows(InvokeKeyboardEvent(keys, "keydown"));
         public virtual PointerJS SendText(string text) => Scroll().Follows(InvokeKeyboardEvent(ConvertService.ToHotKeys(text), "keydown"));
-        public virtual PointerJS Scroll() => With(".scrollIntoView({ behavior: 'smooth', block: 'end'})");
+     
+        public virtual PointerJS Scroll() => ScrollingElement().With(".scrollIntoView({ behavior: 'smooth', block: 'end'})");
         public virtual PointerJS ScrollTo(PointerJS pointer) => ScrollX(pointer).Follows(ScrollY(pointer));
         public virtual PointerJS ScrollTo(string codeX, string codeY) => ScrollX(codeX).Follows(ScrollY(codeY));
         public virtual PointerJS ScrollTo(int x, int y) => ScrollX(x).Follows(ScrollY(y));
-        public virtual PointerJS ScrollX(PointerJS pointer) => With(".scrollLeft").Set(pointer.Clone().PositionX());
-        public virtual PointerJS ScrollX(string code) => With(".scrollLeft").Set(code);
-        public virtual PointerJS ScrollX(int x) => With(".scrollLeft").Set(x);
-        public virtual PointerJS ScrollY(PointerJS pointer) => With(".scrollTop").Set(pointer.Clone().PositionY());
-        public virtual PointerJS ScrollY(string code) => With(".scrollTop").Set(code);
-        public virtual PointerJS ScrollY(int y) => With(".scrollTop").Set(y);
+        public virtual PointerJS ScrollX(PointerJS pointer) => ScrollingElement().With(".scrollLeft").Set(pointer.Clone().PositionX());
+        public virtual PointerJS ScrollX(string code) => ScrollingElement().With(".scrollLeft").Set(code);
+        public virtual PointerJS ScrollX(int x) => ScrollingElement().With(".scrollLeft").Set(x);
+        public virtual PointerJS ScrollY(PointerJS pointer) => ScrollingElement().With(".scrollTop").Set(pointer.Clone().PositionY());
+        public virtual PointerJS ScrollY(string code) => ScrollingElement().With(".scrollTop").Set(code);
+        public virtual PointerJS ScrollY(int y) => ScrollingElement().With(".scrollTop").Set(y);
+        public virtual PointerJS ScrollingElement() => _IsDocument ? Clone().FromPure("document.scrollingElement") : this;
         public virtual PointerJS Position() => PositionX().Join(PositionY()).Array();
         public virtual PointerJS PositionX() => With(".offsetLeft");
         public virtual PointerJS PositionY() => With(".offsetTop");
@@ -762,9 +757,6 @@ namespace MiMFa.Engine.Web
         public virtual PointerJS Children() => With(".children");
         public virtual PointerJS Child(int index) => Children().With("[" + index + "]");
         public virtual PointerJS Child(params int[] indeces) => Children().With("[" + string.Join("].children[", indeces) + "]");
-
-        public virtual PointerJS this[int index] { get => Get(index); set => Set(index,value); }
-        public virtual PointerJS this[string name] { get => Get(name); set => Set(name, value); }
 
         public virtual PointerJS Get(int index) => With("[" + index + "]");
         public virtual PointerJS Get(params int[] indeces) => With("[" + string.Join("][", indeces) + "]");
@@ -836,33 +828,69 @@ namespace MiMFa.Engine.Web
             value + "";
 
 
+        public virtual bool Wait(long milisecond = 1000)
+        {
+            //return Not()
+            //    .And("(delay -= 1000)>0")
+            //    .While()
+            //    .Then("new Promise(resolve => setTimeout(resolve, 1000));")
+            //    .Prepend("let delay =" + milisecond + ";")
+            //    .Return(this)
+            //    .TryPerform(false);
+            var tick = DateTime.Now.Ticks + milisecond * 10000;
+            do
+            {
+                if (TryPerform(false)) return true;
+                Task.Delay(3000);
+            } while (tick > DateTime.Now.Ticks);
+            return false;
+        }
+
+        public virtual string Parse() => ConvertService.ToString(TryPerform(default(object)));
+        public virtual bool Parse(bool defaultValue = default) => ConvertService.TryToBoolean(TryPerform(default(object)), defaultValue);
+        public virtual short Parse(short defaultValue = default) => ConvertService.TryToShort(TryPerform(default(object)), defaultValue);
+        public virtual int Parse(int defaultValue = default) => ConvertService.TryToInt(TryPerform(default(object)), defaultValue);
+        public virtual long Parse(long defaultValue = default) => ConvertService.TryToLong(TryPerform(default(object)), defaultValue);
+        public virtual float Parse(float defaultValue = default) => ConvertService.TryToSingle(TryPerform(default(object)), defaultValue);
+        public virtual double Parse(double defaultValue = default) => ConvertService.TryToDouble(TryPerform(default(object)), defaultValue);
+        public virtual decimal Parse(decimal defaultValue = default) => ConvertService.TryToDecimal(TryPerform(default(object)), defaultValue);
         public virtual T Parse<T>(T defaultValue = default(T)) => TryPerform(defaultValue);
 
         public override string ToString() => TryPerform("");
 
-        public static implicit operator string(PointerJS pointer) => pointer.TryPerform(string.Empty);
-        public static implicit operator bool(PointerJS pointer) => pointer.TryPerform(false);
-        public static implicit operator short(PointerJS pointer) => pointer.TryPerform((short)0);
-        public static implicit operator int(PointerJS pointer) => pointer.TryPerform(0);
-        public static implicit operator long(PointerJS pointer) => pointer.TryPerform(0L);
-        public static implicit operator float(PointerJS pointer) => pointer.TryPerform(0F);
-        public static implicit operator double(PointerJS pointer) => pointer.TryPerform(0D);
-        public static implicit operator decimal(PointerJS pointer) => pointer.TryPerform(0M);
+        public static implicit operator string(PointerJS pointer) => pointer.Parse(string.Empty);
+        public static implicit operator bool(PointerJS pointer) => pointer.Parse(false);
+        public static implicit operator short(PointerJS pointer) => pointer.Parse((short)0);
+        public static implicit operator int(PointerJS pointer) => pointer.Parse(0);
+        public static implicit operator long(PointerJS pointer) => pointer.Parse(0L);
+        public static implicit operator float(PointerJS pointer) => pointer.Parse(0F);
+        public static implicit operator double(PointerJS pointer) => pointer.Parse(0D);
+        public static implicit operator decimal(PointerJS pointer) => pointer.Parse(0M);
 
         public IEnumerator<PointerJS> GetEnumerator()
         {
             var pointer = PerformPointer();
             int index = 0;
-            while (pointer.Get(index).IsExists().Return().TryPerform(false))
+            while (pointer.Get(index).IsExists().TryPerform(false))
                 yield return pointer.Get(index++);
         }
         IEnumerator IEnumerable.GetEnumerator()
         {
             var pointer = PerformPointer();
             int index = 0;
-            while (pointer.Get(index).IsExists().Return().TryPerform(false))
+            while (pointer.Get(index).IsExists().TryPerform(false))
                 yield return pointer.Get(index++);
         }
+
+
+        public static explicit operator PointerJS(string value) => new PointerJS(ToScript(value), PointerMode.Pure);
+        public static explicit operator PointerJS(bool value) => new PointerJS(ToScript(value), PointerMode.Pure);
+        public static explicit operator PointerJS(short value) => new PointerJS(ToScript(value), PointerMode.Pure);
+        public static explicit operator PointerJS(int value) => new PointerJS(ToScript(value), PointerMode.Pure);
+        public static explicit operator PointerJS(long value) => new PointerJS(ToScript(value), PointerMode.Pure);
+        public static explicit operator PointerJS(float value) => new PointerJS(ToScript(value), PointerMode.Pure);
+        public static explicit operator PointerJS(double value) => new PointerJS(ToScript(value), PointerMode.Pure);
+        public static explicit operator PointerJS(decimal value) => new PointerJS(ToScript(value), PointerMode.Pure);
 
     }
 }

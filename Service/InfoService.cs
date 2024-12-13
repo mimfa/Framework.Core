@@ -113,10 +113,14 @@ namespace MiMFa.Service
         /// <param name="text">a sample text</param>
         /// <param name="maxCode">For example: Minimum code for Ansi is 255</param>
         /// <returns></returns>
-        public static bool IsEncodingScope(string text, int maxCode = 255)
-        {
-            return !(text??"").Any(c => c > maxCode);
-        }
+        public static bool IsEncodingScope(string text, int maxCode = 255) => IsEncodingScope(text,0, maxCode);
+        /// <summary>
+        /// check if the sample text is in the encoding scope
+        /// </summary>
+        /// <param name="text">a sample text</param>
+        /// <param name="maxCode">For example: Minimum code for Ansi is 255</param>
+        /// <returns></returns>
+        public static bool IsEncodingScope(string text, int minCode, int maxCode) =>!(text ?? "").Any(c => c < minCode || c > maxCode);
 
         public static bool IsHTMLContent(object value)
         {

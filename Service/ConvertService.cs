@@ -1023,6 +1023,16 @@ namespace MiMFa.Service
             var v = Enum.Parse(typeof(T), value, ignoreCase);
             return v == null ? defaultEnum : (T)v;
         }
+        public static T ToEnum<T>(int value) where T : Enum
+        {
+            var v = Enum.Parse(typeof(T), value+"");
+            return v == null ? default(T) : (T)v;
+        }
+        public static T TryToEnum<T>(int value, T defaultEnum) where T : Enum
+        {
+            var v = Enum.Parse(typeof(T), value + "");
+            return v == null ? defaultEnum : (T)v;
+        }
 
         public static IPAddress ToIPAddress(string address)
         {
@@ -1308,16 +1318,25 @@ namespace MiMFa.Service
         {
             return obj == null ? 0 : Convert.ToSingle(obj);
         }
+        public static short TryToShort(object obj, short defaultVal = default)
+        {
+            if (obj == null) return defaultVal;
+            try { return Convert.ToInt16(obj); } catch { return defaultVal; }
+        }
+        public static short ToShort(object obj)
+        {
+            return obj == null ? default : Convert.ToInt16(obj);
+        }
         public static int ToInt(object obj)
         {
             return obj == null ? 0 : Convert.ToInt32(obj);
         }
-        public static int TryToInt(object obj,int defaultVal = 0)
+        public static int TryToInt(object obj,int defaultVal = default)
         {
             if (obj == null) return defaultVal;
             try { return Convert.ToInt32(obj); } catch { return defaultVal; }
         }
-        public static uint TryToUInt(object obj,uint defaultVal = 0)
+        public static uint TryToUInt(object obj,uint defaultVal = default)
         {
             if (obj == null) return defaultVal;
             try { return Convert.ToUInt32(obj); } catch { return defaultVal; }
@@ -1326,25 +1345,30 @@ namespace MiMFa.Service
         {
             return obj == null ? 0 : Convert.ToInt64(obj);
         }
-        public static long TryToLong(object obj, long defaultVal = 0)
+        public static long TryToLong(object obj, long defaultVal = default)
         {
             if (obj == null) return defaultVal;
             try { return Convert.ToInt64(obj); } catch { return defaultVal; }
         }
-        public static ulong TryToULong(object obj, ulong defaultVal = 0)
+        public static ulong TryToULong(object obj, ulong defaultVal = default)
         {
             if (obj == null) return defaultVal;
             try { return Convert.ToUInt64(obj); } catch { return defaultVal; }
         }
-        public static float TryToSingle(object obj, float defaultVal = 0)
+        public static float TryToSingle(object obj, float defaultVal = default)
         {
             if (obj == null) return defaultVal;
             try { return Convert.ToSingle(obj); } catch { return defaultVal; }
         }
-        public static double TryToDouble(object obj, double defaultVal = 0)
+        public static double TryToDouble(object obj, double defaultVal = default)
         {
             if (obj == null) return defaultVal;
             try { return Convert.ToDouble(obj); } catch { return defaultVal; }
+        }
+        public static decimal TryToDecimal(object obj, decimal defaultVal = default)
+        {
+            if (obj == null) return defaultVal;
+            try { return Convert.ToDecimal(obj); } catch { return defaultVal; }
         }
         public static decimal ToDecimal(object obj)
         {
@@ -1356,7 +1380,7 @@ namespace MiMFa.Service
             str = Regex.Replace(str,"\\D+",".").Trim('.');
             return str.Length>0? Convert.ToDecimal(str) : Decimal.Zero;
         }
-        public static double TryToNumber(object obj, double defaultVal = 0)
+        public static double TryToNumber(object obj, double defaultVal = default)
         {
             if (obj == null) return defaultVal;
             try { return ToNumber((obj + "").Trim()); } catch { return defaultVal; }

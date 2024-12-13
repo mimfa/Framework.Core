@@ -50,7 +50,11 @@ namespace MiMFa
         {
             Thread.Sleep(timeout);
         }
-      
+        public static void Wait(int minTimeout, int maxTimeout)
+        {
+            Thread.Sleep(new Random().Next(minTimeout, maxTimeout));
+        }
+
         public static IEnumerable<object> Loop(IEnumerable collection, Func<object, object> action)
         {
             foreach (var item in collection)
@@ -134,7 +138,28 @@ namespace MiMFa
         {
             return action(arg);
         }
-      
+
+        public static TOut If<TOut>(bool condition, Func<TOut> ifTrue = null, Func<TOut> iffalse = null)
+        {
+            if (condition) return iffalse==null? default(TOut): iffalse();
+            else return ifTrue == null ? default(TOut) : ifTrue();
+        }
+        public static TOut If<TIn, TOut>(TIn condition, Func<TIn, TOut> ifTrue = null, Func<TIn, TOut> iffalse = null)
+        {
+            if (condition == null) return iffalse == null ? default(TOut) : iffalse(condition);
+            else return ifTrue == null ? default(TOut) : ifTrue(condition);
+        }
+        public static TOut If<TOut>(bool condition, TOut ifTrue = default, TOut iffalse = default)
+        {
+            if (condition) return iffalse;
+            else return ifTrue;
+        }
+        public static TOut If<TIn, TOut>(TIn condition, TOut ifTrue = default, TOut iffalse = default)
+        {
+            if (condition == null) return iffalse;
+            else return ifTrue;
+        }
+
         public static bool And(params bool[] args)
         {
             foreach (var item in args)
@@ -147,5 +172,6 @@ namespace MiMFa
                 if (item) return true;
             return false;
         }
+
     }
 }
