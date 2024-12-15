@@ -1094,12 +1094,12 @@ namespace MiMFa.General
 
     public enum StandardTypes
     {
-        C,
-        Java,
-        MSSQL,
-        MySQL,
-        SQLite,
-        PostgreSQL
+        C = 0,
+        Java = 1,
+        MSSQL = 2,
+        MySQL = 3,
+        SQLite = 4,
+        PostgreSQL = 5
     }
     #endregion
 }

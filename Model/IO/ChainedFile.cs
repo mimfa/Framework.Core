@@ -1315,17 +1315,16 @@ namespace MiMFa.Model.IO
                     case StandardTypes.Java:
                         type = "string";
                         break;
-                    case StandardTypes.MSSQL:
-                        type = p < maxStringLength ? (unicode ? $"NVARCHAR({p})": $"VARCHAR({p})") : (unicode ? "NVARCHAR(MAX)" : "TEXT");
-                        break;
                     case StandardTypes.MySQL:
+                    case StandardTypes.PostgreSQL:
                         type = (p < maxStringLength ? $"VARCHAR({p})" : "TEXT");
                         break;
                     case StandardTypes.SQLite:
                         type = "TEXT";
                         break;
+                    case StandardTypes.MSSQL:
                     default:
-                        type = (p < maxStringLength ? $"VARCHAR({p})" : "TEXT");
+                        type = p < maxStringLength ? (unicode ? $"NVARCHAR({p})": $"VARCHAR({p})") : (unicode ? "NVARCHAR(MAX)" : "TEXT");
                         break;
                 }
             }
@@ -2129,14 +2128,16 @@ namespace MiMFa.Model.IO
             IsPieceChanged = false;
             IsCountingPiece = false;
             IsCountedPiece = false;
-            PieceWarpsCount = 0;
-            PieceLinesCount = 0;
+            LastPieceWarpsCount = 0;
+            LastPieceLinesCount = 0;
             ReadsFlush();
             PieceWritesBuffer.Clear();
             PieceUndoBuffer.Clear();
             PieceRedoBuffer.Clear();
             LastUndoBufferID = 0;
             LastRedoBufferID = 0;
+            LastLineIndex = 0;
+            LastPieceColumnsLabelsTypes = null;
             if (HasForePiece) ForePiece.Restart();
             OnActed("Restart");
         }
@@ -4642,9 +4643,10 @@ namespace MiMFa.Model.IO
         #region CONVERT
         public IEnumerable<string> ToSQL(string database = null, string table = null)
         {
+            table = table ?? ConvertService.ToVariableName(NameWithoutExtension, "_");
             if (!string.IsNullOrWhiteSpace(database))
             {
-                bool hasUnicode = ColumnsLabelsTypes.Any(v => (v.Value ?? "").StartsWith("N"));
+                bool hasUnicode = TypesStandard != StandardTypes.MSSQL || ColumnsLabelsTypes.Any(v => (v.Value ?? "").StartsWith("N"));
                 List<string> options = new List<string>();
                 switch (TypesStandard)
                 {
@@ -4673,8 +4675,69 @@ namespace MiMFa.Model.IO
                 }
                 switch (TypesStandard)
                 {
+                    case StandardTypes.MySQL:
+                        yield return string.Join(Environment.NewLine,
+                            "-- DATABASE: Connect to the database and create if it is not exist",
+                            "DELIMITER //",
+                            $"CREATE PROCEDURE CreateOrAlterDatabase_{table}()",
+                            "BEGIN",
+                            "\tDECLARE db_count INT DEFAULT 0;",
+                            $"\tSELECT COUNT(*) INTO db_count FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{database}';",
+                            "\tIF db_count = 0 THEN",
+                            $"\t\tSET @create_db_query = 'CREATE DATABASE {database} {string.Join(" ", options)}';",
+                            "\t\tPREPARE stmt FROM @create_db_query;",
+                            "\t\tEXECUTE stmt;",
+                            "\t\tDEALLOCATE PREPARE stmt;",
+                            options.Count > 0 ?
+                                string.Join(Environment.NewLine,
+                                    "\tELSE",
+                                    $"\t\tSET @alter_db_query = 'ALTER DATABASE {database} {string.Join(" ", options)}';",
+                                    "\t\tPREPARE stmt FROM @alter_db_query;",
+                                    "\t\tEXECUTE stmt;",
+                                    "\t\tDEALLOCATE PREPARE stmt;",
+                                    "\tEND IF;",
+                                    "END //"
+                                ) :
+                                "\tEND IF;"+ Environment.NewLine +
+                                "END //",
+                            "DELIMITER ;",
+                            "-- DATABASE: Call the procedure to create or alter the database",
+                            $"CALL CreateOrAlterDatabase_{table}();"
+                        );
+                        yield return string.Join(Environment.NewLine,
+                            "-- DATABASE: Use the database",
+                            $"USE {database};"
+                        );
+                        break;
+                    case StandardTypes.SQLite:
+                        yield return string.Join(Environment.NewLine,
+                            "-- DATABASE: Connect to the database and create if it is not exist",
+                            //$"ATTACH DATABASE '{database}' AS {database = "dbo"};",
+                            options.Count>0?string.Join($";{Environment.NewLine}",options)+";":""
+                        );
+                        break;
+                    case StandardTypes.Java:
+                    case StandardTypes.PostgreSQL:
+                        yield return string.Join(Environment.NewLine,
+                            "-- DATABASE: Connect to the database and create if it is not exist",
+                            "DO $$",
+                            "BEGIN",
+                            $"\tIF NOT EXISTS (SELECT FROM pg_database WHERE datname = '{database}') THEN",
+                            "\t\tPERFORM dblink_exec(",
+                            "\t\t\t'dbname=postgres',",
+                            $"\t\t\t'CREATE DATABASE {database} {(options.Count > 0?"WITH "+string.Join(" ", from o in options select o.Replace("'","''")) :"")}'",
+                            "\t\t);",
+                            "\tEND IF;",
+                            "END $$;"
+                        );
+                        //yield return string.Join(Environment.NewLine,
+                        //    "-- DATABASE: Use the database",
+                        //    $"\\c {database};"
+                        //);
+                        break;
                     case StandardTypes.C:
                     case StandardTypes.MSSQL:
+                    default:
                         yield return string.Join(Environment.NewLine,
                             "-- DATABASE: Connect to the database and create if it is not exist",
                             $"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '{database}')",
@@ -4686,7 +4749,7 @@ namespace MiMFa.Model.IO
                                 "ELSE",
                                 "BEGIN",
                                 $"\tALTER DATABASE [{database}]",
-                                "\t"+string.Join($"{Environment.NewLine}\t", options)+";",
+                                "\t" + string.Join($"{Environment.NewLine}\t", options) + ";",
                                 "END;"
                             ) : ""
                         );
@@ -4699,57 +4762,8 @@ namespace MiMFa.Model.IO
                             $"USE [{database}];"
                         );
                         break;
-                    case StandardTypes.MySQL:
-                        yield return string.Join(Environment.NewLine,
-                            "-- DATABASE: Connect to the database and create if it is not exist",
-                            "DECLARE db_count INT",
-                            $"SELECT COUNT(*) INTO db_count FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{database}'",
-                            "IF db_count = 0 THEN",
-                            $"\tSET @create_db_query = 'CREATE DATABASE {database} {string.Join(" ", options)}';",
-                            "\tPREPARE stmt FROM @create_db_query;",
-                            "\tEXECUTE stmt;",
-                            "\tDEALLOCATE PREPARE stmt;",
-                            options.Count > 0 ?
-                            string.Join(Environment.NewLine,
-                                "ELSE",
-                                $"\tSET @create_db_query = 'ALTER DATABASE {database} {string.Join(" ", options)}';",
-                                "\tPREPARE stmt FROM @create_db_query;",
-                                "\tEXECUTE stmt;",
-                                "\tDEALLOCATE PREPARE stmt;",
-                                "END IF;"
-                            ) : ""
-                        );
-                        yield return string.Join(Environment.NewLine,
-                            "-- DATABASE: Use the database",
-                            $"USE {database};"
-                        );
-                        break;
-                    case StandardTypes.SQLite:
-                        yield return string.Join(Environment.NewLine,
-                            "-- DATABASE: Connect to the database and create if it is not exist",
-                            $"ATTACH DATABASE '{database}' AS {database = "dbo"};",
-                            options.Count>0?string.Join($";{Environment.NewLine}",options):""
-                        );
-                        break;
-                    case StandardTypes.Java:
-                    case StandardTypes.PostgreSQL:
-                        yield return string.Join(Environment.NewLine,
-                            "-- DATABASE: Connect to the database and create if it is not exist",
-                            $"IF NOT EXISTS (SELECT FROM pg_database WHERE datname = '{database}') THEN",
-                            "EXECUTE",
-                            $"\t'CREATE DATABASE {database} {(options.Count > 0?"WITH "+string.Join(" ", options):"")}';",
-                            "END IF;"
-                        );
-                        yield return string.Join(Environment.NewLine,
-                            "-- DATABASE: Use the database",
-                            $"\\c {database};"
-                        );
-                        break;
-                    default:
-                        break;
                 }
             }
-            table = table ?? ConvertService.ToVariableName(NameWithoutExtension, "_");
             if (!string.IsNullOrWhiteSpace(table))
             {
                 string[] reservedWords = new string[] { "ADD", "EXTERNAL", "PROCEDURE", "ALL", "FETCH", "PUBLIC", "ALTER", "FILE", "RAISERROR", "AND", "FILLFACTOR", "READ", "ANY", "FOR", "READTEXT", "AS", "FOREIGN", "RECONFIGURE", "ASC", "FREETEXT", "REFERENCES", "AUTHORIZATION", "FREETEXTTABLE", "REPLICATION", "BACKUP", "RESTORE", "BEGIN", "FULL", "RESTRICT", "BETWEEN", "FUNCTION", "RETURN", "BREAK", "GOTO", "REVERT", "BROWSE", "GRANT", "REVOKE", "BULK", "GROUP", "RIGHT", "BY", "HAVING", "ROLLBACK", "CASCADE", "HOLDLOCK", "ROWCOUNT", "CASE", "IDENTITY", "ROWGUIDCOL", "CHECK", "IDENTITY_INSERT", "RULE", "CHECKPOINT", "IDENTITYCOL", "SAVE", "CLOSE", "IF", "SCHEMA", "CLUSTERED", "IN", "SECURITYAUDIT", "COALESCE", "INDEX", "SELECT", "COLLATE", "INNER", "SEMANTICKEYPHRASETABLE", "COLUMN", "INSERT", "SEMANTICSIMILARITYDETAILSTABLE", "COMMIT", "INTERSECT", "SEMANTICSIMILARITYTABLE", "COMPUTE", "INTO", "SESSION_USER", "CONSTRAINT", "IS", "SET", "CONTAINS", "JOIN", "SETUSER", "CONTAINSTABLE", "KEY", "SHUTDOWN", "CONTINUE", "KILL", "SOME", "CONVERT", "LEFT", "STATISTICS", "CREATE", "LIKE", "SYSTEM_USER", "CROSS", "LINENO", "TABLE", "CURRENT", "LOAD", "TABLESAMPLE", "CURRENT_DATE", "MERGE", "TEXTSIZE", "CURRENT_TIME", "NATIONAL", "THEN", "CURRENT_TIMESTAMP", "NOCHECK", "TO", "CURRENT_USER", "NONCLUSTERED", "TOP", "CURSOR", "NOT", "TRAN", "DATABASE", "NULL", "TRANSACTION", "DBCC", "NULLIF", "TRIGGER", "DEALLOCATE", "OF", "TRUNCATE", "DECLARE", "OFF", "TRY_CONVERT", "DEFAULT", "OFFSETS", "TSEQUAL", "DELETE", "ON", "UNION", "DENY", "OPEN", "UNIQUE", "DESC", "OPENDATASOURCE", "UNPIVOT", "DISK", "OPENQUERY", "UPDATE", "DISTINCT", "OPENROWSET", "UPDATETEXT", "DISTRIBUTED", "OPENXML", "USE", "DOUBLE", "OPTION", "USER", "DROP", "OR", "VALUES", "DUMP", "ORDER", "VARYING", "ELSE", "OUTER", "VIEW", "END", "OVER", "WAITFOR", "ERRLVL", "PERCENT", "WHEN", "ESCAPE", "PIVOT", "WHERE", "EXCEPT", "PLAN", "WHILE", "EXEC", "PRECISION", "WITH", "EXECUTE", "PRIMARY", "WITHIN GROUP", "EXISTS", "PRINT", "WRITETEXT", "EXIT", "PROC", "TRUE", "FALSE" };
@@ -4771,7 +4785,24 @@ namespace MiMFa.Model.IO
                     int num = 1;
                     string mname = cname;
                     while (cols.Contains(cname)) cname = $"{mname}_{num++}";
-                    col.Add($"[{cname}]");
+                    switch (TypesStandard)
+                    {
+                        case StandardTypes.MySQL:
+                            col.Add($"`{cname}`");
+                            break;
+                        case StandardTypes.SQLite:
+                            col.Add($"{cname}");
+                            break;
+                        case StandardTypes.Java:
+                        case StandardTypes.PostgreSQL:
+                            col.Add($"{cname}");
+                            break;
+                        case StandardTypes.C:
+                        case StandardTypes.MSSQL:
+                        default:
+                            col.Add($"[{cname}]");
+                            break;
+                    }
                     col.Add(ctype);
                     var isUnicode = ctype.StartsWith("N");
                     if (
@@ -4789,24 +4820,20 @@ namespace MiMFa.Model.IO
                     else
                         switch (TypesStandard)
                         {
-                            case StandardTypes.C:
-                            case StandardTypes.MSSQL:
-                                if (isUnicode) col.Add("COLLATE Latin1_General_100_CI_AS_SC");
-                                col.Add("NULL");
-                                break;
                             case StandardTypes.MySQL:
                                 if (isUnicode) col.Add("CHARACTER SET utf8mb4 COLLATE");
-                                col.Add("NULL");
                                 break;
                             case StandardTypes.SQLite:
-                                col.Add("NULL");
                                 break;
                             case StandardTypes.Java:
                             case StandardTypes.PostgreSQL:
                                 if (isUnicode) col.Add("COLLATE \"en_US.utf8\"");
-                                col.Add("NULL");
                                 break;
+                            case StandardTypes.C:
+                            case StandardTypes.MSSQL:
                             default:
+                                if (isUnicode) col.Add("COLLATE Latin1_General_100_CI_AS_SC");
+                                col.Add("NULL");
                                 break;
                         }
                     cols.Add(cname);
@@ -4821,16 +4848,16 @@ namespace MiMFa.Model.IO
                     switch (TypesStandard)
                     {
                         case StandardTypes.MySQL:
-                            tableNotExists.Insert(0,$"[{id}] BIGINT AUTO_INCREMENT PRIMARY KEY");
+                            tableNotExists.Insert(0,$"`{id}` BIGINT AUTO_INCREMENT PRIMARY KEY");
                             types.Insert(0, "BIGINT");
                             break;
                         case StandardTypes.SQLite:
-                            tableNotExists.Insert(0, $"[{id}] INTEGER PRIMARY KEY AUTOINCREMENT");
+                            tableNotExists.Insert(0, $"{id} INTEGER PRIMARY KEY AUTOINCREMENT");
                             types.Insert(0, "INTEGER");
                             break;
                         case StandardTypes.Java:
                         case StandardTypes.PostgreSQL:
-                            tableNotExists.Insert(0, $"[{id}] SERIAL PRIMARY KEY");
+                            tableNotExists.Insert(0, $"{id} SERIAL PRIMARY KEY");
                             types.Insert(0, "SERIAL");
                             break;
                         case StandardTypes.C:
@@ -4845,61 +4872,260 @@ namespace MiMFa.Model.IO
                 if (index > 0)
                 {
                     List<string> tableIsExist = new List<string>();
-                    for (int i = 0; i < cols.Count; i++)
-                        if (cols[i] != id)
-                            tableIsExist.Add(
-                            $"\tIF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = '{cols[i]}' AND Object_ID = Object_ID('{table}')){Environment.NewLine}" +
-                            $"\t\tBEGIN ALTER TABLE [dbo].[{table}] ADD {tableNotExists[i]}; END"
-                        );
-                    yield return string.Join(Environment.NewLine,
-                        $"-- TABLE: Check if {table} exists and create if it does not",
-                        $"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '{table}')",
-                        $"BEGIN",
-                        $"\tCREATE TABLE [dbo].[{table}] (",
-                        "\t\t" + string.Join($",{Environment.NewLine}\t\t", tableNotExists),
-                        "\t);",
-                        "END",
-                        "-- TABLE: Add new columns if the table exists",
-                        "ELSE",
-                        "BEGIN",
-                        string.Join(Environment.NewLine, tableIsExist),
-                        "END;"
-                    );
-                    int c = idindex<0?1:0;
-                    for (long i = ColumnsLabelsIndex + 1; i < LinesCount; i += 100)
-                        yield return string.Join(Environment.NewLine,
-                            $"-- ROW: Insert or replace sample rows into {table}",
-                            $"MERGE [dbo].[{table}] AS target",
-                            "USING (VALUES",
-                                "\t(" + string.Join($"),{Environment.NewLine}\t(",
-                                from row in ReadRecords(i).Take(100)
-                                where (c = (idindex < 0 ? 1 : 0)) >= 0
-                                select
-                                    string.Join(", ",
-                                        (idindex < 0 ? new string[] { "null" } : new string[] { }).Concat
-                                        (
-                                            from cell in row
-                                            where types.Count > c
-                                            let t = types[c++]
-                                            let isUnicode = t.StartsWith("N")
-                                            select
-                                                numberTypes.Contains(t) ? 
-                                                    string.IsNullOrWhiteSpace(cell.Value)? "null": ConvertService.TryToDouble(cell.Value)+"" :
-                                                string.IsNullOrEmpty(cell.Value) ? "null" :
-                                                ((isUnicode?"N'":"'") + ((Regex.IsMatch(t,"\\d+")?StringService.Compress(cell.Value.Replace("'", "''"), ConvertService.TryToInt(Regex.Match(t, "\\d+").Value,cell.Value.Length * 2)) :cell.Value.Replace("'", "''"))) + "'")
-                                        )
+                    switch (TypesStandard)
+                    {
+                        case StandardTypes.MySQL:
+                            for (int i = 0; i < cols.Count; i++)
+                                if (cols[i] != id)
+                                    tableIsExist.Add(
+                                    $"\t\tIF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE COLUMN_NAME = '{cols[i]}' AND TABLE_NAME = '{table}' AND TABLE_SCHEMA = DATABASE()) THEN{Environment.NewLine}" +
+                                    $"\t\t\tALTER TABLE `{table}` ADD {tableNotExists[i]};{Environment.NewLine}" +
+                                    "\t\tEND IF;"
+                                );
+                            break;
+                        case StandardTypes.SQLite:
+                            for (int i = 0; i < cols.Count; i++)
+                                if (cols[i] != id)
+                                    tableIsExist.Add(
+                                    //$"DO UPDATE {table} SET {cols[i]}=NULL WHERE false;{Environment.NewLine}" +
+                                    $"ALTER TABLE {table} ADD COLUMN {tableNotExists[i]};"
+                                );
+                            break;
+                        case StandardTypes.Java:
+                        case StandardTypes.PostgreSQL:
+                            for (int i = 0; i < cols.Count; i++)
+                                if (cols[i] != id)
+                                    tableIsExist.Add(
+                                            $"\t\tIF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = '{table}' AND column_name = '{cols[i]}') THEN{Environment.NewLine}" +
+                                            $"\t\t\tALTER TABLE {table} ADD COLUMN {tableNotExists[i]};{Environment.NewLine}" +
+                                            "\t\tEND IF;"
+                                );
+                            break;
+                        case StandardTypes.C:
+                        case StandardTypes.MSSQL:
+                        default:
+                            for (int i = 0; i < cols.Count; i++)
+                                if (cols[i] != id)
+                                    tableIsExist.Add(
+                                    $"\tIF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = '{cols[i]}' AND Object_ID = Object_ID('{table}')){Environment.NewLine}" +
+                                    $"\t\tBEGIN ALTER TABLE [dbo].[{table}] ADD {tableNotExists[i]}; END"
+                                );
+                            break;
+                    }
+                    switch (TypesStandard)
+                    {
+                        case StandardTypes.MySQL:
+                            yield return string.Join(Environment.NewLine,
+                                $"-- TABLE: Check if {table} exists and create if it does not",
+                                "DELIMITER //",
+                                $"CREATE PROCEDURE CreateOrAlterTable_{table}()",
+                                "BEGIN",
+                                "\tDECLARE table_count INT DEFAULT 0;",
+                                $"\tSELECT COUNT(*) INTO table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '{table}' AND TABLE_SCHEMA = DATABASE();",
+                                "\tIF table_count = 0 THEN",
+                                $"\t\tCREATE TABLE `{table}` (",
+                                "\t\t\t" + string.Join($",{Environment.NewLine}\t\t\t", tableNotExists),
+                                "\t\t);",
+                                "\tELSE",
+                                string.Join(Environment.NewLine, tableIsExist),
+                                "\tEND IF;",
+                                "END //",
+                                "DELIMITER ;",
+                                "-- Call the procedure",
+                                $"CALL CreateOrAlterTable_{table}();"
+                            );
+                            break;
+                        case StandardTypes.SQLite:
+                            yield return string.Join(Environment.NewLine,
+                                $"-- TABLE: Check if {table} exists and create if it does not",
+                                "PRAGMA foreign_keys = OFF;",
+                                $"CREATE TABLE IF NOT EXISTS {table} (",
+                                "\t" + string.Join($",{Environment.NewLine}\t", tableNotExists),
+                                ");",
+                                "PRAGMA foreign_keys = ON;",
+                                "-- TABLE: Add columns if the table was exist",
+                                "BEGIN;",
+                                string.Join(Environment.NewLine, tableIsExist),
+                                "COMMIT;"
+                            );
+                            break;
+                        case StandardTypes.Java:
+                        case StandardTypes.PostgreSQL:
+                            yield return string.Join(Environment.NewLine,
+                                    $"-- TABLE: Check if {table} exists and create if it does not",
+                                    "DO $$",
+                                    "BEGIN",
+                                    $"\tIF NOT EXISTS (SELECT FROM pg_catalog.pg_tables WHERE tablename = '{table}') THEN",
+                                    $"\t\tCREATE TABLE {table} (",
+                                    "\t\t\t" + string.Join($",{Environment.NewLine}\t\t\t", tableNotExists),
+                                    "\t\t);",
+                                    "\tEND IF;",
+                                    "END $$;",
+                                    string.Join(Environment.NewLine,
+                                        "-- TABLE: Add new columns if the table exists",
+                                        "DO $$",
+                                        "BEGIN",
+                                        string.Join(Environment.NewLine, tableIsExist),
+                                        "END $$;"
                                     )
-                            ) + ")",
-                            ") AS source (" +
-                            string.Join(", ", cols) + ")",
-                            $"ON target.{id} = source.{id}",
-                            "WHEN MATCHED THEN",
-                            "\tUPDATE SET",
-                            "\t\t" + string.Join($",{Environment.NewLine}\t\t", from c1 in cols where c1 != id select $"target.{c1} = source.{c1}"),
-                            "WHEN NOT MATCHED THEN",
-                            "\tINSERT (" + string.Join(", ", idindex<0? cols.Where(v=>v != id): cols) + ")",
-                            "\tVALUES (" + string.Join(", ", from c2 in idindex < 0 ? cols.Where(v => v != id) : cols select $"source.{c2}") + ");"
-                        );
+                                );
+                            break;
+                        case StandardTypes.C:
+                        case StandardTypes.MSSQL:
+                        default:
+                            yield return string.Join(Environment.NewLine,
+                                $"-- TABLE: Check if {table} exists and create if it does not",
+                                $"IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '{table}')",
+                                $"BEGIN",
+                                $"\tCREATE TABLE [dbo].[{table}] (",
+                                "\t\t" + string.Join($",{Environment.NewLine}\t\t", tableNotExists),
+                                "\t);",
+                                "END",
+                                "-- TABLE: Add new columns if the table exists",
+                                "ELSE",
+                                "BEGIN",
+                                string.Join(Environment.NewLine, tableIsExist),
+                                "END;"
+                            );
+                            break;
+                    }
+
+                    int c = idindex<0?1:0;
+                    switch (TypesStandard)
+                    {
+                        case StandardTypes.MySQL:
+                            for (long i = ColumnsLabelsIndex + 1; i < LinesCount; i += 100)
+                                yield return string.Join(Environment.NewLine,
+                                    $"-- ROW: Insert or replace sample rows into {table}",
+                                    $"INSERT INTO `{table}` ({string.Join(", ", cols)})",
+                                    "VALUES",
+                                        "\t"+string.Join($",{Environment.NewLine}\t",
+                                            from row in ReadRecords(i).Take(100)
+                                            where (c = (idindex < 0 ? 1 : 0)) >= 0
+                                            select "(" + string.Join(", ",
+                                                (idindex < 0 ? new string[] { "NULL" } : new string[] { }).Concat
+                                                (
+                                                    from cell in row
+                                                    where types.Count > c
+                                                    let t = types[c++]
+                                                    let isUnicode = t.StartsWith("N")
+                                                    select
+                                                        numberTypes.Contains(t) ?
+                                                            string.IsNullOrWhiteSpace(cell.Value) ? "NULL" : ConvertService.TryToDouble(cell.Value) + "" :
+                                                        string.IsNullOrEmpty(cell.Value) ? "NULL" :
+                                                        ((isUnicode ? "N'" : "'") +
+                                                            (Regex.IsMatch(t, "\\d+") ?
+                                                                StringService.Compress(cell.Value.Replace("'", "''"), ConvertService.TryToInt(Regex.Match(t, "\\d+").Value, cell.Value.Length * 2))
+                                                                : cell.Value.Replace("'", "''")) + "'")
+                                                )
+                                            ) + ")"
+                                        ),
+                                    "ON DUPLICATE KEY UPDATE",
+                                    "\t"+string.Join($",{Environment.NewLine}\t",
+                                        from c1 in cols where c1 != id select $"{c1} = VALUES({c1})") + ";"
+                                );
+                            break;
+                        case StandardTypes.SQLite:
+                            for (long i = ColumnsLabelsIndex + 1; i < LinesCount; i += 100)
+                                yield return string.Join(Environment.NewLine,
+                                    $"-- ROW: Insert or replace sample rows into {table}",
+                                    $"INSERT OR REPLACE INTO {table} ({string.Join(", ", cols)})",
+                                    "VALUES",
+                                        "\t" + string.Join($",{Environment.NewLine}\t",
+                                            from row in ReadRecords(i).Take(100)
+                                            where (c = (idindex < 0 ? 1 : 0)) >= 0
+                                            select "(" + string.Join(", ",
+                                                (idindex < 0 ? new string[] { "NULL" } : new string[] { }).Concat
+                                                (
+                                                    from cell in row
+                                                    where types.Count > c
+                                                    let t = types[c++]
+                                                    let isUnicode = t.StartsWith("N")
+                                                    select
+                                                        numberTypes.Contains(t) ?
+                                                            string.IsNullOrWhiteSpace(cell.Value) ? "NULL" : ConvertService.TryToDouble(cell.Value) + "" :
+                                                        string.IsNullOrEmpty(cell.Value) ? "NULL" :
+                                                        ((isUnicode ? "N'" : "'") +
+                                                            (Regex.IsMatch(t, "\\d+") ?
+                                                                StringService.Compress(cell.Value.Replace("'", "''"), ConvertService.TryToInt(Regex.Match(t, "\\d+").Value, cell.Value.Length * 2))
+                                                                : cell.Value.Replace("'", "''")) + "'")
+                                                )
+                                            ) + ")"
+                                        ) + ";"
+                                );
+                            break;
+                        case StandardTypes.Java:
+                        case StandardTypes.PostgreSQL:
+                            for (long i = ColumnsLabelsIndex + 1; i < LinesCount; i += 100)
+                                yield return string.Join(Environment.NewLine,
+                                    $"-- ROW: Insert or replace sample rows into {table}",
+                                    $"INSERT INTO \"{table}\" ({string.Join(", ", cols)})",
+                                    "VALUES",
+                                        "\t" + string.Join($",{Environment.NewLine}\t",
+                                            from row in ReadRecords(i).Take(100)
+                                            where (c = (idindex < 0 ? 1 : 0)) >= 0
+                                            select "(" + string.Join(", ",
+                                                (idindex < 0 ? new string[] { "DEFAULT" } : new string[] { }).Concat
+                                                (
+                                                    from cell in row
+                                                    where types.Count > c
+                                                    let t = types[c++]
+                                                    let isUnicode = t.StartsWith("N")
+                                                    select
+                                                        numberTypes.Contains(t) ?
+                                                            string.IsNullOrWhiteSpace(cell.Value) ? "NULL" : ConvertService.TryToDouble(cell.Value) + "" :
+                                                        string.IsNullOrEmpty(cell.Value) ? "NULL" :
+                                                        ((isUnicode ? "N'" : "'") +
+                                                            (Regex.IsMatch(t, "\\d+") ?
+                                                                StringService.Compress(cell.Value.Replace("'", "''"), ConvertService.TryToInt(Regex.Match(t, "\\d+").Value, cell.Value.Length * 2))
+                                                                : cell.Value.Replace("'", "''")) + "'")
+                                                )
+                                            ) + ")"
+                                        ),
+                                    $"ON CONFLICT ({id}) DO UPDATE SET",
+                                        "\t" + string.Join($",{Environment.NewLine}\t",
+                                            from c1 in cols where c1 != id select $"{c1} = EXCLUDED.{c1}")+";"
+                                );
+                            break;
+                        case StandardTypes.C:
+                        case StandardTypes.MSSQL:
+                        default:
+                            for (long i = ColumnsLabelsIndex + 1; i < LinesCount; i += 100)
+                                yield return string.Join(Environment.NewLine,
+                                    $"-- ROW: Insert or replace sample rows into {table}",
+                                    $"MERGE [dbo].[{table}] AS target",
+                                    "USING (VALUES",
+                                        "\t(" + string.Join($"),{Environment.NewLine}\t(",
+                                        from row in ReadRecords(i).Take(100)
+                                        where (c = (idindex < 0 ? 1 : 0)) >= 0
+                                        select
+                                            string.Join(", ",
+                                                (idindex < 0 ? new string[] { "null" } : new string[] { }).Concat
+                                                (
+                                                    from cell in row
+                                                    where types.Count > c
+                                                    let t = types[c++]
+                                                    let isUnicode = t.StartsWith("N")
+                                                    select
+                                                        numberTypes.Contains(t) ?
+                                                            string.IsNullOrWhiteSpace(cell.Value) ? "null" : ConvertService.TryToDouble(cell.Value) + "" :
+                                                        string.IsNullOrEmpty(cell.Value) ? "null" :
+                                                        ((isUnicode ? "N'" : "'") + ((Regex.IsMatch(t, "\\d+") ? StringService.Compress(cell.Value.Replace("'", "''"), ConvertService.TryToInt(Regex.Match(t, "\\d+").Value, cell.Value.Length * 2)) : cell.Value.Replace("'", "''"))) + "'")
+                                                )
+                                            )
+                                    ) + ")",
+                                    ") AS source (" +
+                                    string.Join(", ", cols) + ")",
+                                    $"ON target.{id} = source.{id}",
+                                    "WHEN MATCHED THEN",
+                                    "\tUPDATE SET",
+                                    "\t\t" + string.Join($",{Environment.NewLine}\t\t", from c1 in cols where c1 != id select $"target.{c1} = source.{c1}"),
+                                    "WHEN NOT MATCHED THEN",
+                                    "\tINSERT (" + string.Join(", ", idindex < 0 ? cols.Where(v => v != id) : cols) + ")",
+                                    "\tVALUES (" + string.Join(", ", from c2 in idindex < 0 ? cols.Where(v => v != id) : cols select $"source.{c2}") + ");"
+                                );
+                            break;
+                    }
                 }
             }
         }
