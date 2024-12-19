@@ -239,30 +239,40 @@ namespace MiMFa.Service
         {
             return AJAX(url, namevaluecollection,"POST");
         }
-        public static void SendEmail(string userName, string password, string mailServer, string from, string to, string message, string subject = null, bool isHTML = true, params string[] cc)
-            => SendEmail(userName, password, mailServer, new MailAddress(from), new MailAddress(to), message, subject, isHTML, (from c in cc select new MailAddress(c)).ToList());
-        public static void SendEmail(string userName, string password, string mailServer, MailAddress from, MailAddress to, string message, string subject = null, bool isHTML = true, List<MailAddress> cc = null, List<MailAddress> bcc = null)
+        public static void SendEmail(string from, string to, string message, string subject = null, string userName = null, string password = null, string mailServer = null, bool isHTML = true, params string[] cc)
+            => SendEmail(
+                new MailAddress(from.Contains("@") ? from.Trim() : ($"{from.Trim()}@" + (string.IsNullOrWhiteSpace(mailServer)? "gmail.com" : mailServer.ToLower().Split(new string[] { "smtp." , "pop."}, StringSplitOptions.RemoveEmptyEntries).Last()))),
+                new MailAddress(to.Contains("@") ? to.Trim() : ($"{to.Trim()}@" + (string.IsNullOrWhiteSpace(mailServer)? "gmail.com" : mailServer.ToLower().Split(new string[] { "smtp." , "pop."}, StringSplitOptions.RemoveEmptyEntries).Last()))),
+                message, subject, userName, password, mailServer, isHTML, (from c in cc select new MailAddress(c)).ToList());
+        public static void SendEmail(MailAddress from, MailAddress to, string message, string subject = null, string userName = null, string password = null, string mailServer = null, bool isHTML = true, List<MailAddress> cc = null, List<MailAddress> bcc = null)
         {
-            SmtpClient mailClient = new SmtpClient(mailServer);
-            MailMessage mailMessage = new MailMessage();
-            mailMessage.From = from;
-            mailMessage.To.Add(to);
+            SmtpClient mailClient = string.IsNullOrWhiteSpace(mailServer) ? new SmtpClient(mailServer = $"smtp.{from.Host}"):new SmtpClient(mailServer);
+            MailMessage mailMessage = new MailMessage(from, to);
             if (cc != null) foreach (MailAddress addr in cc) mailMessage.CC.Add(addr);
             if (bcc != null) foreach (MailAddress addr in bcc) mailMessage.Bcc.Add(addr);
+            mailMessage.HeadersEncoding = System.Text.Encoding.UTF8;
             mailMessage.Subject = subject;
+            mailMessage.SubjectEncoding = System.Text.Encoding.UTF8;
             mailMessage.Body = message;
             mailMessage.IsBodyHtml = isHTML;
-            mailClient.EnableSsl = true;
-            SendEmail(new NetworkCredential(userName, password), mailClient, mailMessage);
+            mailMessage.BodyEncoding = System.Text.Encoding.UTF8;
+            //mailClient.EnableSsl = true;
+            SendEmail(
+                mailMessage, 
+                new NetworkCredential(
+                    string.IsNullOrWhiteSpace(userName) ? from.User : userName,
+                    password),
+                mailClient);
             mailMessage.Dispose();
         }
-        public static void SendEmail(NetworkCredential credentials, SmtpClient mailClient, MailMessage message)
+        public static void SendEmail(MailMessage message, NetworkCredential credentials, SmtpClient mailClient)
         {
             mailClient.Credentials = credentials;
-            SendEmail(mailClient, message);
+            SendEmail(message, mailClient);
         }
-        public static void SendEmail(SmtpClient mailClient, MailMessage message)
+        public static void SendEmail(MailMessage message, SmtpClient mailClient)
         {
+            //mailClient.SendAsync(message.From.Address,string.Join(";",message.To),message.Subject,message.Body,DateTime.Now.Ticks.ToString());
             mailClient.Send(message);
         }
 

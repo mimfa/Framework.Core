@@ -1,6 +1,6 @@
 <h1 align="center">
 	<a href="https://framework.mimfa.net" target="_blank">
-		<img alt="MiMFa Framework" width="20%" src="https://framework.mimfa.net/file/logo/logo.png"/>
+		<img alt="MiMFa Framework" width="20%" src="https://framework.mimfa.net/asset/logo/logo.png"/>
 		<br>
 		<a href="https://github.com/mimfa">MiMFa</a> <a href="https://github.com/mimfa/Framework.Core">Framework.Core</a>
 	</a>

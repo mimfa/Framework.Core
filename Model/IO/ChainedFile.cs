@@ -544,7 +544,7 @@ namespace MiMFa.Model.IO
             return pattern;
         }
 
-        public bool OptimizedTypes { get; set; } = false;
+        public bool OptimizedTypes { get; set; } = true;
         public bool IsForceColumnsLabels { get; private set; } = false;
         public bool HasPieceColumnsLabels => PieceColumnsLabelsIndex > -1;
         private long _PieceColumnsLabelsIndex = -1;
