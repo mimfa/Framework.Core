@@ -62,7 +62,6 @@ namespace MiMFa.Service
                 else
                     percent.AddValue(unit);
             percent.AddValue(-tu);
-            percent = percent;
             return percent;
         }
 

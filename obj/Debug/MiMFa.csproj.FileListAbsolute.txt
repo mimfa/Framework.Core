@@ -36,9 +36,6 @@ D:\MiMFa\My Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\Mi
 D:\MiMFa\My Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa Framework.dll
 D:\MiMFa\My Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa Framework.pdb
 D:\MiMFa\My Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.csproj.AssemblyReference.cache
-D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\MiMFa Framework.dll.config
-D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\MiMFa Framework.dll
-D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\MiMFa Framework.pdb
 D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\HtmlAgilityPack.dll
 D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\HtmlAgilityPack.pdb
 D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\HtmlAgilityPack.xml
@@ -53,6 +50,7 @@ D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.Servi
 D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.csproj.GenerateResource.cache
 D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.csproj.CoreCompileInputs.cache
 D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.csproj.CopyComplete
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\MiMFa Framework.dll
+D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\bin\Debug\MiMFa Framework.pdb
 D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa Framework.dll
 D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa Framework.pdb
-D:\Product\Technology\MiMFa Framework\MiMFa Framework\Core\obj\Debug\MiMFa.csproj.AssemblyReference.cache

@@ -57,7 +57,7 @@ namespace MiMFa.Exclusive.View
         }
 
         public bool AllowMime = false;
-        public bool AllowChainedFile = true;
+        public bool AllowChainedDocument = true;
         public bool AllowDictionary = true;
         public bool AllowKeyValuePair = true;
         public bool AllowCollection = true;
@@ -117,8 +117,8 @@ namespace MiMFa.Exclusive.View
                 return Done((byte)obj);
             if (AllowString && obj is String)
                 return Done(obj + "");
-            if (AllowCollection && obj is MiMFa.Model.IO.ChainedFile)
-                return Done((MiMFa.Model.IO.ChainedFile)obj);
+            if (AllowCollection && obj is MiMFa.Model.IO.ChainedDocument)
+                return Done((MiMFa.Model.IO.ChainedDocument)obj);
             if (AllowCollection && obj is IEnumerable<string>)
                 return Done((IEnumerable<string>)obj);
             if (AllowCollection && obj is IEnumerable<IEnumerable<string>>)
@@ -171,7 +171,7 @@ namespace MiMFa.Exclusive.View
             if (Translate) arg = Default.Translate(SignTranslate + (arg));
             return arg;
         }
-        public virtual String Done(ChainedFile arg)
+        public virtual String Done(ChainedDocument arg)
         {
             if (arg == null) return "";
             return string.Join(BreakSign, from item in arg.ReadRows() select Done(item));

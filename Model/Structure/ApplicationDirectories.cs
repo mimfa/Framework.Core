@@ -39,12 +39,12 @@ namespace MiMFa.Exclusive.Collection.Instance
 
         public new string ThisDirectory { get; set; }
         public new string ConfigurationDirectory { get; set; }
-        public new string TempDirectory { get; set; }
+        public string TempDirectory { get; set; }
         public new string LogDirectory { get; set; }
         public string DataTempDirectory { get; set; }
         public virtual string DataDirectory { get; set; }
         public virtual string BaseDirectory { get; set; }
-        public virtual string LanguageDirectory { get; set; }
+        public new string LanguageDirectory { get; set; }
         public virtual string ViewDirectory { get; set; }
         public virtual string FileDirectory { get; set; }
         public virtual string TemplateDirectory { get; set; }

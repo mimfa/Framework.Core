@@ -15,7 +15,6 @@ using MiMFa.Model;
 using System.Collections;
 using System.Windows.Forms;
 using System.Drawing.Imaging;
-using System.Windows.Documents;
 using System.Threading;
 using MiMFa.Exclusive.ProgramingTechnology.Tools.Pickup;
 using System.Text.RegularExpressions;
@@ -1457,7 +1456,7 @@ namespace MiMFa.Service
         }
         public static DataTable ToTable(string textfilePath, string columnsDelimiter="\t", string rowsDelimiter="\r\n",int maxrow = 999999999)
         {
-            var document = new ChainedFile(textfilePath);
+            var document = new ChainedDocument(textfilePath);
             document.WarpsSplitter = columnsDelimiter;
             document.LinesSplitter = rowsDelimiter;
             document.ColumnsLabelsIndex = 0;
@@ -1913,9 +1912,9 @@ namespace MiMFa.Service
         }
         public static void ToExcelFile(string textFileAddress, string exceladdress, string[] delimiteds, char[] trimchars, string sheetName = "sheet1", bool openAfter = true)
         {
-            ToExcelFile(from v in new ChainedFile(textFileAddress) {WarpsSplitters = delimiteds } select from c in v select c.Trim(trimchars), exceladdress, sheetName, openAfter);
+            ToExcelFile(from v in new ChainedDocument(textFileAddress) {WarpsSplitters = delimiteds } select from c in v select c.Trim(trimchars), exceladdress, sheetName, openAfter);
         }
-        public static void ToExcelFile(ChainedFile doc, string exceladdress, string sheetName = "sheet", bool openAfter = true)
+        public static void ToExcelFile(ChainedDocument doc, string exceladdress, string sheetName = "sheet", bool openAfter = true)
         {
             int i = 0;
             if(doc.IsBig) 
@@ -2270,61 +2269,6 @@ namespace MiMFa.Service
                     }
                 }
                 finally { connection.Close(); }
-            }
-        }
-        #endregion
-
-        #region XAML
-        public static string ToXAML(string rtfText)
-        {
-            var richTextBox = new System.Windows.Controls.RichTextBox();
-            if (string.IsNullOrEmpty(rtfText)) return "";
-            var textRange = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
-            using (var rtfMemoryStream = new MemoryStream())
-            {
-                using (var rtfStreamWriter = new StreamWriter(rtfMemoryStream))
-                {
-                    rtfStreamWriter.Write(rtfText);
-                    rtfStreamWriter.Flush();
-                    rtfMemoryStream.Seek(0, SeekOrigin.Begin);
-                    textRange.Load(rtfMemoryStream, System.Windows.DataFormats.Rtf);
-                }
-            }
-            using (var rtfMemoryStream = new MemoryStream())
-            {
-                textRange = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
-                textRange.Save(rtfMemoryStream, System.Windows.DataFormats.Xaml);
-                rtfMemoryStream.Seek(0, SeekOrigin.Begin);
-                using (var rtfStreamReader = new StreamReader(rtfMemoryStream))
-                {
-                    return rtfStreamReader.ReadToEnd();
-                }
-            }
-        }
-        public static string ToRTF(string xamlText)
-        {
-            var richTextBox = new System.Windows.Controls.RichTextBox();
-            if (string.IsNullOrEmpty(xamlText)) return "";
-            var textRange = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
-            using (var xamlMemoryStream = new MemoryStream())
-            {
-                using (var xamlStreamWriter = new StreamWriter(xamlMemoryStream))
-                {
-                    xamlStreamWriter.Write(xamlText);
-                    xamlStreamWriter.Flush();
-                    xamlMemoryStream.Seek(0, SeekOrigin.Begin);
-                    textRange.Load(xamlMemoryStream, System.Windows.DataFormats.Xaml);
-                }
-            }
-            using (var rtfMemoryStream = new MemoryStream())
-            {
-                textRange = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
-                textRange.Save(rtfMemoryStream, System.Windows.DataFormats.Rtf);
-                rtfMemoryStream.Seek(0, SeekOrigin.Begin);
-                using (var rtfStreamReader = new StreamReader(rtfMemoryStream))
-                {
-                    return rtfStreamReader.ReadToEnd();
-                }
             }
         }
         #endregion

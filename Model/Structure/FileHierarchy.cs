@@ -74,17 +74,17 @@ namespace MiMFa.Model.Structure
                         IOService.OpenDeserializeFile(p, ref h);
                         if (h != null && h is Hierarchy<T>) Append((Hierarchy<T>)h);
                     }
-                    catch (Exception ex) { }
+                    catch { }
                 if (allchild)
                     foreach (StreamHierarchy<T> item in Children)
-                        if(item.IsCollapse) ((StreamHierarchy<T>)item).Expand(allchild);
+                        if(item.IsCollapse) item.Expand(allchild);
             }
             return this;
         }
 
         public Hierarchy<T> Update(string path)
         {
-            return Update(new ChainedFile(path));
+            return Update(new ChainedDocument(path));
         }
     }
 }

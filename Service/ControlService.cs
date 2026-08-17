@@ -682,7 +682,7 @@ namespace MiMFa.Service
                     //rtb.Rtf = string.Join(Environment.NewLine,new string[] {h}.Concat( rtb.Rtf.Replace(h, "").Split(new string[] { Environment.NewLine, "\n" }, StringSplitOptions.None).Skip(l+1)));
                 }
             }
-            catch (Exception ex) { }
+            catch{ }
             return rtb;
         }
         public static RichTextBox RichTextBoxDequeueLines(RichTextBox rtb, int num = -1)
@@ -700,7 +700,7 @@ namespace MiMFa.Service
                         //rtb.Rtf = h + string.Join(Environment.NewLine, rtb.Rtf.Replace(h, "").Split(new string[] { Environment.NewLine, "\n" }, StringSplitOptions.None).Skip(num));
                     }
                 }
-                catch (Exception ex) { }
+                catch{ }
             return rtb;
         }
         #endregion

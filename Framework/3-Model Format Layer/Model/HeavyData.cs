@@ -30,7 +30,7 @@ namespace MiMFa.Framework.ModelFormatLayer.Model
         public string FromTable { get; set; }
         public string FromColumn { get; set; }
         public string FromRecord { get; set; }
-        public object Value { get; set; } = null;
+        public override object Value { get; set; } = null;
         public string ValueType { get; set; }
     }
 }

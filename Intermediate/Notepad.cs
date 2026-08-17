@@ -23,18 +23,20 @@ namespace MiMFa.Intermediate
         {
             Process notepad = Process.Start(new ProcessStartInfo("notepad.exe"));
             if (notepad != null)
-            {
-                notepad.WaitForInputIdle();
-
-                if (!string.IsNullOrEmpty(title))
-                    SetWindowText(notepad.MainWindowHandle, title);
-
-                if (!string.IsNullOrEmpty(message))
+                try
                 {
-                    IntPtr child = FindWindowEx(notepad.MainWindowHandle, new IntPtr(0), "Edit", null);
-                    SendMessage(child, 0x000C, 0, message);
+                    notepad.WaitForInputIdle();
+
+                    if (!string.IsNullOrEmpty(title))
+                        SetWindowText(notepad.MainWindowHandle, title);
+
+                    if (!string.IsNullOrEmpty(message))
+                    {
+                        IntPtr child = FindWindowEx(notepad.MainWindowHandle, new IntPtr(0), "Edit", null);
+                        SendMessage(child, 0x000C, 0, message);
+                    }
                 }
-            }
+                catch { }
         }
     }
 }

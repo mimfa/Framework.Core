@@ -12,7 +12,7 @@ using MiMFa.Exclusive.Accessibility;
 using MiMFa.Exclusive.ProgramingTechnology.DataBase;
 using MiMFa.Service;
 using System.IO;
-
+using MiMFa.Model.IO;
 
 namespace MiMFa.Exclusive.Language
 {
@@ -36,7 +36,6 @@ namespace MiMFa.Exclusive.Language
         public static bool IsRun = false;
         public static bool WithNormalization = true;
         public static bool WithWordSpace = true;
-        public static string Conditions = " COLLATE NOCASE";
         private static bool _CaseSensitive = false;
         public static string ConfigurationTableName = "Configuration";
         public static string TextTableName = MessageMode.Message.ToString();
@@ -44,7 +43,7 @@ namespace MiMFa.Exclusive.Language
         public static string AlertTableName = MessageMode.Warning.ToString();
         public static string ErrorTableName = MessageMode.Error.ToString();
         public static string[] ResultSpliter = new string[] { SplitSign };
-        public static SQLiteDataBase db = null;// new SQLiteDataBase(LanguagePath);
+        public static ChainedDocument db = null;// new SQLiteDataBase(LanguagePath);
 
         public static string LanguageDirectory
         {
@@ -68,14 +67,7 @@ namespace MiMFa.Exclusive.Language
         public static bool CaseSensitive
         {
             get { return _CaseSensitive; }
-            set
-            {
-                if (!(_CaseSensitive = value))
-                {
-                    if (!StringService.ExistAny(Conditions,false , "COLLATE NOCASE")) Conditions += " " + "COLLATE NOCASE";
-                }
-                else Conditions = Conditions.Replace("COLLATE NOCASE", "");
-            }
+            set { _CaseSensitive = value; }
         }
         #endregion
 
@@ -128,7 +120,7 @@ namespace MiMFa.Exclusive.Language
         /// </summary> 
         public static string GetText(params string[] Keys)
         {
-            return string.Join(" ", Keys);
+            //return string.Join(" ", Keys);
             if (!IsRun) Restart();
             string result = "";
             for (int i = 0; i < Keys.Length; i++)
@@ -253,34 +245,18 @@ namespace MiMFa.Exclusive.Language
         }
         public static string GetTranslate(string str)
         {
-            string tablename;
-            switch (MessageType)
-            {
-                case MessageMode.Success:
-                    tablename = SuccessTableName;
-                    break;
-                case MessageMode.Warning:
-                    tablename = AlertTableName;
-                    break;
-                case MessageMode.Error:
-                    tablename = ErrorTableName;
-                    break;
-                default:
-                    tablename = TextTableName;
-                    break;
-            }
             try
             {
                 string ss = "";
                 object obj = null;
-                obj = db.GetValue(tablename, str, Conditions);
+                obj = db.Cell(Name, str);
                 if (obj != null)
                     return obj.ToString().Split(ResultSpliter, StringSplitOptions.None)[0];
                 else if (str.StartsWith(SignTryTranslate))
-                    if ((obj = db.GetValue(tablename, str = str.Replace(SignTryTranslate, ""), Conditions)) != null)
+                    if ((obj = db.Cell(Name, str = str.Replace(SignTryTranslate, ""))) != null)
                         return obj.ToString().Split(ResultSpliter, StringSplitOptions.None)[0];
                     else return str;
-                else if ((obj = db.GetValue(tablename, ss = ConvertService.ToSeparatedWords(str), Conditions)) != null)
+                else if ((obj = db.Cell(Name, ss = ConvertService.ToSeparatedWords(str))) != null)
                     return obj.ToString().Split(ResultSpliter, StringSplitOptions.None)[0];
                 if (ss.Contains(" ")) return GetFullTranslate(str);
             }
@@ -302,29 +278,12 @@ namespace MiMFa.Exclusive.Language
         }
         public static string GetReverseTranslate(string str)
         {
-            string tablename;
-            switch (MessageType)
-            {
-                case MessageMode.Success:
-                    tablename = SuccessTableName;
-                    break;
-                case MessageMode.Warning:
-                    tablename = AlertTableName;
-                    break;
-                case MessageMode.Error:
-                    tablename = ErrorTableName;
-                    break;
-                default:
-                    tablename = TextTableName;
-                    break;
-            }
-            object obj = null;
-                obj = db.GetKeys(tablename, str, Conditions)[0];
+            object obj = db.Cell(Name, str)[0];
             if (obj != null)
                 return obj.ToString().Split(new string[] { SplitSign }, StringSplitOptions.None)[0];
-            else if (str.StartsWith(SignTryTranslate) && (obj = db.GetKeys(tablename,str = str.Replace(SignTryTranslate, ""), Conditions)) != null)
+            else if (str.StartsWith(SignTryTranslate) && (obj = db.Row(str = str.Replace(SignTryTranslate, ""))) != null)
                 return ((object[])obj)[0].ToString().Split(ResultSpliter, StringSplitOptions.None)[0];
-            else if ((obj = db.GetKeys(tablename, ConvertService.ToSeparatedWords(str), Conditions)[0]) != null)
+            else if ((obj = db.Row(ConvertService.ToSeparatedWords(str)).FirstOrDefault()) != null)
                 return obj.ToString().Split(new string[] { SplitSign }, StringSplitOptions.None)[0];
             else return GetReverseFullTranslate(str);
         }
@@ -337,12 +296,7 @@ namespace MiMFa.Exclusive.Language
             {
                 IsRun = true;
                 //db.ShowException = false;
-                db.Start(LanguagePath);
-                db.CreateDic(ConfigurationTableName, "BLOB");
-                db.CreateDic(SuccessTableName, "TEXT");
-                db.CreateDic(ErrorTableName, "TEXT");
-                db.CreateDic(AlertTableName, "TEXT");
-                db.CreateDic(TextTableName, "TEXT");
+                db = new ChainedDocument(LanguagePath);
                 //SaveConfiguration();
                 UpdateConfiguration();
             }
@@ -367,33 +321,17 @@ namespace MiMFa.Exclusive.Language
         public static bool SetValue(string key, object value, MessageMode messageType = MessageMode.Message)
         {
             if (!IsRun) Restart();
-            string mt;
-            switch (MessageType)
-            {
-                case MessageMode.Success:
-                    mt = SuccessTableName;
-                    break;
-                case MessageMode.Warning:
-                    mt = AlertTableName;
-                    break;
-                case MessageMode.Error:
-                    mt = ErrorTableName;
-                    break;
-                default:
-                    mt = TextTableName;
-                    break;
-            }
-            try { db.SetValue(mt, key, value); return true; } catch { return false; }
+            try { db[Name, key] = value+""; return true; } catch { return false; }
         }
 
         public static void SaveConfiguration()
         {
             try
             {
-                db.SetValue(ConfigurationTableName, "Name", Name, true);
-                db.SetValue(ConfigurationTableName, "Language", Language, true);
-                db.SetValue(ConfigurationTableName, "RightToLeft", RTL, true);
-                db.SetValue(ConfigurationTableName, "Flag", ConvertService.ToByteArray(Flag));
+                db[Name, "☼Name☼"] = Name;
+                db[Name, "☼Language☼"] = Language + "";
+                db[Name, "☼RightToLeft☼"] = RTL + "";
+                db[Name, "☼Flag☼"] = string.Join("", from v in ConvertService.ToByteArray(Flag) select (char)v);
             }
             catch { }
         }
@@ -401,10 +339,10 @@ namespace MiMFa.Exclusive.Language
         {
             try
             {
-                Name = db.GetValue(ConfigurationTableName, "Name", true).ToString();
-                _Language = (LanguageMode)db.GetValue(ConfigurationTableName, "Language", true);
-                RTL = (RightToLeft)db.GetValue(ConfigurationTableName, "RightToLeft", true);
-                Flag = (Bitmap)db.GetValue(ConfigurationTableName, "Flag");
+                Name = db.Cell(Name, "☼Name☼").ToString();
+                _Language = (LanguageMode)Enum.Parse(typeof(LanguageMode), db.Cell(Name, "☼Language☼"), true);
+                RTL = (RightToLeft)Enum.Parse(typeof(RightToLeft), db.Cell(Name, "☼RightToLeft☼"), true);
+                //Flag = (Bitmap)((from c in db.Cell(Name, "☼Flag☼").ToCharArray() select ((byte)c)).ToArray());
             }
             catch{ }
         }

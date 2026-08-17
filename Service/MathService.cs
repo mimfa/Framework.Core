@@ -765,7 +765,7 @@ namespace MiMFa.Service
         }
         public static long TimeEffect(long number, DateTime fromTime, DateTime toTime, int miliseconds = 1000, long target = 0)
         {
-            var d = Math.Min(1, (toTime.Ticks - fromTime.Ticks) / (10000l * miliseconds));
+            var d = Math.Min(1, (toTime.Ticks - fromTime.Ticks) / (10000L * miliseconds));
             var v = number - target;
             return target + (v - v * d);
         }

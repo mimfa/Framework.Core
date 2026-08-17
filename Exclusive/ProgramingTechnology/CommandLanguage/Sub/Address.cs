@@ -29,7 +29,7 @@ namespace MiMFa.Exclusive.ProgramingTechnology.CommandLanguage
         public string BaseProjectDirectory { get;  set; }
         public string BaseOtherDirectory { get;  set; }
         public string MainDirectory { get;  set; }
-        public string HelpDirectory { get;  set; }
+        public new string HelpDirectory { get;  set; }
         public string AttachDirectory { get; set; }
 
         public Address() : base()

@@ -94,6 +94,7 @@ namespace MiMFa.Interpreters
 
 
         void Interrupt();
+        void Continue();
 
         /// <summary>
         /// Evaluate Codes

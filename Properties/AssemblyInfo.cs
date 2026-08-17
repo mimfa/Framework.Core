@@ -2,35 +2,35 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-// General Information about an assembly is controlled through the following 
+// General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("MiMFa Framework.Core")]
-[assembly: AssemblyDescription("Core of all MiMFa applications")]
+[assembly: AssemblyTitle("MiMFa Core")]
+[assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("MiMFa")]
-[assembly: AssemblyProduct("MiMFa Framework.Core")]
-[assembly: AssemblyCopyright("Copyright © MiMFa  2017")]
+[assembly: AssemblyProduct("MiMFa Framework Core")]
+[assembly: AssemblyCopyright("All rights reserved fir MiMFa Company ©  2026")]
 [assembly: AssemblyTrademark("MiMFa Framework")]
 [assembly: AssemblyCulture("")]
 
-// Setting ComVisible to false makes the types in this assembly not visible 
-// to COM components.  If you need to access a type in this assembly from 
+// Setting ComVisible to false makes the types in this assembly not visible
+// to COM components.  If you need to access a type in this assembly from
 // COM, set the ComVisible attribute to true on that type.
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("adc72cd2-885e-442a-983e-0ba87b7234ef")]
+[assembly: Guid("b7cbc810-9f1b-4320-b847-b5335dc14e9d")]
 
 // Version information for an assembly consists of the following four values:
 //
 //      Major Version
-//      Minor Version 
+//      Minor Version
 //      Build Number
 //      Revision
 //
-// You can specify all the values or you can default the Build and Revision Numbers 
+// You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("4.6.0.0")]
-[assembly: AssemblyFileVersion("4.6.0.0")]
+[assembly: AssemblyVersion("4.6.5.0")]
+[assembly: AssemblyFileVersion("4.6.5.0")]

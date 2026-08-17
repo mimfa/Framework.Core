@@ -8,13 +8,15 @@ namespace MiMFa.Engine.Web
 {
     public enum PointerMode
     {
-        Pure = -1,
-        Id = 0,
-        Name = 1,
-        Tag = 2,
-        Class = 3,
-        Location = 4,
-        Query = 5,
-        XPath = 6
+        Undefined = -1,
+        Pure = 0,
+        Id = 1,
+        Name = 2,
+        Tag = 3,
+        Class = 4,
+        Location = 5,
+        Regex = 6,
+        Query = 7,
+        XPath = 8
     }
 }
